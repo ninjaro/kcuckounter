@@ -26,7 +26,6 @@
 #define CARD_COUNTER_TABLE_HPP
 
 // Qt
-#include <KGameDifficultyLevel>
 #include <QSet>
 #include <QWidget>
 

@@ -25,20 +25,28 @@
 #ifndef CARD_COUNTER_MAINWINDOW_HPP
 #define CARD_COUNTER_MAINWINDOW_HPP
 
-// KF
-#include <KXmlGuiWindow>
 // Qt
 #include <QLabel>
 #include <QPointer>
 #include <QSlider>
-
+#ifdef KC_KDE
+// KF
+#include <KXmlGuiWindow>
+using BaseMainWindow = KXmlGuiWindow;
 class KGameClock;
-
 class KToggleAction;
+using ToggleAction = KToggleAction;
+#else
+#include <QMainWindow>
+using BaseMainWindow = QMainWindow;
+#include <QAction>
+using ToggleAction = QAction;
+#include <QTimer>
+#endif
 
 class Table;
 
-class MainWindow final : public KXmlGuiWindow {
+class MainWindow final : public BaseMainWindow {
     Q_OBJECT
 
 public:
@@ -75,8 +83,10 @@ private:
 
     Table* table;
 
+#ifdef KC_KDE
     KGameClock* game_clock = nullptr;
-    KToggleAction* action_pause = nullptr;
+#endif
+    ToggleAction* action_pause = nullptr;
 
     QPointer<QLabel> time_label = new QLabel;
     QPointer<QLabel> score_label = new QLabel;

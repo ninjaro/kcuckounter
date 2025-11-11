@@ -33,12 +33,9 @@
 #include <QSpinBox>
 #include <QSvgRenderer>
 #include <QTextEdit>
-#include <memory>
-// KF
-#include <KConfigGroup>
-#include <KLocalizedString>
-#include <KSharedConfig>
 // own
+#include "compat/config_shim.hpp"
+#include "compat/i18n_shim.hpp"
 #include "strategy/strategy.hpp"
 #include "strategy/strategyinfo.hpp"
 #include "widgets/cards.hpp"
@@ -54,7 +51,11 @@ StrategyInfo::StrategyInfo(
     setModal(true);
 
     strategies_group
+#ifdef KC_KDE
         = new KConfigGroup(KSharedConfig::openConfig(), "CCStrategies");
+#else
+        = new KConfigGroup("CCStrategies");
+#endif
 
     init_strategies();
 

@@ -32,9 +32,8 @@
 #include <QRandomGenerator>
 #include <QSpinBox>
 #include <QSvgRenderer>
-// KF
-#include <KLocalizedString>
 // own
+#include "compat/i18n_shim.hpp"
 #include "settings.hpp"
 #include "strategy/strategy.hpp"
 #include "strategy/strategyinfo.hpp"

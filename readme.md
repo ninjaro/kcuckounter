@@ -2,18 +2,22 @@
 
 ## ...one flew east, one flew west, <br>One flew over the multiple decks.
 
-[//]: # ([![version]&#40;https://img.shields.io/github/v/release/YaRiabtsev/kcuckounter?include_prereleases&#41;]&#40;https://github.com/YaRiabtsev/kcuckounter/releases/latest&#41;)
-[//]: # ([![Checks]&#40;https://github.com/YaRiabtsev/kcuckounter/actions/workflows/tests.yml/badge.svg&#41;]&#40;https://github.com/YaRiabtsev/kcuckounter/actions/workflows/tests.yml&#41;)
-[//]: # ([![Docs & Coverage]&#40;https://github.com/YaRiabtsev/kcuckounter/actions/workflows/html.yml/badge.svg&#41;]&#40;https://github.com/YaRiabtsev/kcuckounter/actions/workflows/html.yml&#41;)
-[//]: # ([![codecov]&#40;https://codecov.io/gh/YaRiabtsev/kcuckounter/graph/badge.svg?token=MCNEJFWMDU&#41;]&#40;https://codecov.io/gh/YaRiabtsev/kcuckounter&#41;)
+[//]: # ([![version]&#40;https://img.shields.io/github/v/release/ninjaro/kcuckounter?include_prereleases&#41;]&#40;https://github.com/ninjaro/kcuckounter/releases/latest&#41;)
 
-[![license](https://img.shields.io/github/license/YaRiabtsev/kcuckounter?color=e6e6e6)](https://github.com/YaRiabtsev/kcuckounter/blob/master/license)
+[//]: # ([![Checks]&#40;https://github.com/ninjaro/kcuckounter/actions/workflows/tests.yml/badge.svg&#41;]&#40;https://github.com/ninjaro/kcuckounter/actions/workflows/tests.yml&#41;)
+
+[//]: # ([![Docs & Coverage]&#40;https://github.com/ninjaro/kcuckounter/actions/workflows/html.yml/badge.svg&#41;]&#40;https://github.com/ninjaro/kcuckounter/actions/workflows/html.yml&#41;)
+
+[//]: # ([![codecov]&#40;https://codecov.io/gh/ninjaro/kcuckounter/graph/badge.svg?token=MCNEJFWMDU&#41;]&#40;https://codecov.io/gh/ninjaro/kcuckounter&#41;)
+
+[![license](https://img.shields.io/github/license/ninjaro/kcuckounter?color=e6e6e6)](https://github.com/ninjaro/kcuckounter/blob/master/license)
 
 > Just play poker in Indian Casinos and stay single and live where and how he wants to, if people would let him,
 > <br> P.R. said — but Chief released him.
 
 They’re out there. <br>
-Black Kings and Red Queens in suits — up before me, to be committed to the repository and get mopped up before you can memorize them.
+Black Kings and Red Queens in suits — up before me, to be committed to the repository and get mopped up before you can
+memorize them.
 
 ## Brief Description
 
@@ -62,27 +66,32 @@ stack with KDE Frameworks 6. Typical packages are:
 
 ## Setup and Installation
 
-1. **Configure**
-   ```bash
-   cmake -B build/ -DCMAKE_INSTALL_PREFIX=$HOME/kde/usr/ -DQT_MAJOR_VERSION=6
-   ```
-2. **Build**
-   ```bash
-   cmake --build build/ --parallel $(nproc)
-   ```
-3. **Install**
-   ```bash
-   sudo cmake --install build/
-   ```
-4. **Run**
-   ```bash
-   source build/prefix.sh
-   kcuckounter
-   ```
+### KDE on (baseline)
+
+ ```bash
+ cmake -B build-kde/ -DCMAKE_INSTALL_PREFIX=$HOME/kde/usr/ -DQT_MAJOR_VERSION=6 -DKDE=ON
+ cmake --build build-kde/ --parallel $(nproc)
+# sudo cmake --install build-kde/
+ ```
+
+### KDE off
+
+ ```bash
+ cmake -B build-nokde/ -DCMAKE_INSTALL_PREFIX=$HOME/kde/usr/ -DQT_MAJOR_VERSION=6 -DKDE=OFF
+ cmake --build build-nokde/ --parallel $(nproc)
+# sudo cmake --install build-nokde/
+ ```
+
+### Run
+
+ ```bash
+ source build/prefix.sh
+ kcuckounter
+ ```
 
 ## Documentation and Contributing
 
-For detailed documentation see the [Documentation](https://yariabtsev.github.io/kcuckounter/doc/) page. 
+For detailed documentation see the [Documentation](https://ninjaro.github.io/kcuckounter/doc/) page.
 
 ## Docker
 

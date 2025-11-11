@@ -39,14 +39,17 @@
 #include <QSvgRenderer>
 #include <QToolBar>
 #include <QVBoxLayout>
+#ifdef KC_KDE
 // KDEGames
 #include <KGameClock>
 #include <KGameHighScoreDialog>
 #include <KGameStandardAction>
 // KF
 #include <KActionCollection>
-#include <KLocalizedString>
+#include <KGameDifficultyLevel>
+#endif
 // own
+#include "compat/i18n_shim.hpp"
 #include "mainwindow.hpp"
 #include "settings.hpp"
 #include "table/table.hpp"
@@ -54,7 +57,7 @@
 #include "widgets/carousel.hpp"
 
 MainWindow::MainWindow(QWidget* parent)
-    : KXmlGuiWindow(parent) {
+    : BaseMainWindow(parent) {
     game_clock = new KGameClock(this, KGameClock::FlexibleHourMinSec);
     connect(
         game_clock, &KGameClock::timeChanged, this, &MainWindow::advance_time

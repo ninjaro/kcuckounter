@@ -68,26 +68,26 @@ stack with KDE Frameworks 6. Typical packages are:
 
 ### KDE on (baseline)
 
- ```bash
- cmake -B build-kde/ -DCMAKE_INSTALL_PREFIX=$HOME/kde/usr/ -DQT_MAJOR_VERSION=6 -DKDE=ON
- cmake --build build-kde/ --parallel $(nproc)
-# sudo cmake --install build-kde/
- ```
+```bash
+cmake -B build-kde/ -DCMAKE_INSTALL_PREFIX=$HOME/kde/usr/ -DQT_MAJOR_VERSION=6 -DKDE=ON
+cmake --build build-kde/ --parallel $(nproc)
+sudo cmake --install build-kde/
+```
 
 ### KDE off
 
- ```bash
- cmake -B build-nokde/ -DCMAKE_INSTALL_PREFIX=$HOME/kde/usr/ -DQT_MAJOR_VERSION=6 -DKDE=OFF
- cmake --build build-nokde/ --parallel $(nproc)
-# sudo cmake --install build-nokde/
- ```
+```bash
+cmake -B build-nokde/ -DCMAKE_INSTALL_PREFIX=$HOME/kde/usr/ -DQT_MAJOR_VERSION=6 -DKDE=OFF
+cmake --build build-nokde/ --parallel $(nproc)
+sudo cmake --install build-nokde/
+```
 
 ### Run
 
- ```bash
- source build/prefix.sh
- kcuckounter
- ```
+```bash
+source build/prefix.sh
+kcuckounter
+```
 
 ## Documentation and Contributing
 

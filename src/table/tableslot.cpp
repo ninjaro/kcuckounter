@@ -198,16 +198,21 @@ TableSlot::TableSlot(
 }
 
 void TableSlot::on_game_paused(const bool paused) {
-    if (!settings_frame->isHidden()) {
+    if (!paused && !settings_frame->isHidden()) {
         if (Settings::instance().infinity_mode()) {
             cards.clear();
         } else {
-            cards = shuffle_cards(deck_count->value());
+            const int decks = deck_count->value();
+            if (decks < 1) {
+                update();
+                return;
+            }
+            cards = shuffle_cards(decks);
         }
         refresh_button->show();
-        //        swapButton->hide();
         set_id(-1);
         settings_frame->hide();
+        control_frame->show();
     }
     if (paused) {
         answer_frame->hide();

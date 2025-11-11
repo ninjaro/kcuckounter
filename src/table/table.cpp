@@ -304,10 +304,6 @@ void Table::create_new_game(const int level) {
     default:
         break;
     }
-
-    // while (items.count() < table_slot_count_limit) {
-    //     add_new_table_slot(true);
-    // }
     add_new_table_slot();
     calculate_new_column_count(
         size(), bounds.size(), static_cast<qint32>(items.count())

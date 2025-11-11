@@ -47,6 +47,8 @@
 // KF
 #include <KActionCollection>
 #include <KGameDifficultyLevel>
+#else
+#include <QActionGroup>
 #endif
 // own
 #include "compat/i18n_shim.hpp"
@@ -66,10 +68,12 @@ MainWindow::MainWindow(QWidget* parent)
 #else
     game_timer = new QTimer(this);
     connect(game_timer, &QTimer::timeout, this, [this]() {
-        const qint64 secs = elapsed.isValid() ? elapsed.elapsed() / 1000 : 0;
-        const int hh = secs / 3600;
-        const int mm = (secs % 3600) / 60;
-        const int ss = secs % 60;
+        const qint64 total_ms = elapsed_accumulated_ms
+            + (elapsed_running ? elapsed.elapsed() : 0);
+        const qint64 secs = total_ms / 1000;
+        const int hh = static_cast<int>(secs / 3600);
+        const int mm = static_cast<int>((secs % 3600) / 60);
+        const int ss = static_cast<int>(secs % 60);
         const QString t = QString("%1:%2:%3")
                               .arg(hh, 2, 10, QLatin1Char('0'))
                               .arg(mm, 2, 10, QLatin1Char('0'))
@@ -78,7 +82,11 @@ MainWindow::MainWindow(QWidget* parent)
     });
 #endif
     score_label->setText(i18n("Score: 0/0"));
+#ifdef KC_KDE
     time_label->setText(i18n("Time: 00:00"));
+#else
+    time_label->setText(i18n("Time: 00:00:00"));
+#endif
 
     speed_slider->setRange(100, 1000);
     speed_slider->setValue(300);
@@ -99,10 +107,10 @@ MainWindow::MainWindow(QWidget* parent)
 
     const Settings& opts = Settings::instance();
     connect(
-        &opts, &Settings::show_score_changed, score_label, &QWidget::setVisible
+        &opts, &Settings::show_time_changed, time_label, &QWidget::setVisible
     );
     connect(
-        &opts, &Settings::show_time_changed, time_label, &QWidget::setVisible
+        &opts, &Settings::show_score_changed, score_label, &QWidget::setVisible
     );
     connect(
         &opts, &Settings::show_speed_changed, speed_slider, &QWidget::setVisible
@@ -110,8 +118,6 @@ MainWindow::MainWindow(QWidget* parent)
     connect(
         &opts, &Settings::card_theme_changed, table, &Table::set_card_theme
     );
-    // connect(&opts, &Settings::card_background_changed, table,
-    // qOverload<>(&QWidget::update));
     connect(
         &opts, &Settings::card_border_changed, table,
         qOverload<>(&QWidget::update)
@@ -191,7 +197,10 @@ void MainWindow::setup_actions() {
     action_pause->setIcon(
         QIcon::fromTheme(QStringLiteral("media-playback-start"))
     );
-    connect(action_pause, &QAction::toggled, this, &MainWindow::pause_game);
+
+    connect(action_pause, &QAction::toggled, this, [this](bool checked) {
+        pause_game(!checked);
+    });
     main_tool_bar->addAction(action_pause);
 
     QAction* act_prefs = new QAction(i18n("&Settings"), this);
@@ -201,6 +210,32 @@ void MainWindow::setup_actions() {
     );
     main_tool_bar->addAction(act_prefs);
 
+    difficulty_group = new QActionGroup(this);
+    difficulty_group->setExclusive(true);
+
+    auto* act_seq = new QAction(i18n("Sequential"), difficulty_group);
+    act_seq->setCheckable(true);
+    act_seq->setData(1);
+    act_seq->setChecked(true);
+
+    auto* act_rand = new QAction(i18n("Random"), difficulty_group);
+    act_rand->setCheckable(true);
+    act_rand->setData(3);
+
+    auto* act_sim = new QAction(i18n("Simultaneous"), difficulty_group);
+    act_sim->setCheckable(true);
+    act_sim->setData(10);
+
+    // connect(
+    //     difficulty_group, &QActionGroup::triggered, this, [this](QAction* a)
+    //     {
+    //         current_level = a->data().toInt();
+    //         card_mode_changed();
+    //     }
+    // );
+
+    main_tool_bar->addSeparator();
+    main_tool_bar->addActions(difficulty_group->actions());
 #endif
 }
 
@@ -220,17 +255,20 @@ void MainWindow::new_game() {
     game_clock->restart();
     game_clock->pause();
 #else
-    elapsed.restart();
+    elapsed_accumulated_ms = 0;
+    elapsed_running = false;
+    elapsed.invalidate();
     if (game_timer) {
-        game_timer->start(1000);
         game_timer->stop();
     }
+    advance_time(QStringLiteral("00:00:00"));
+    game_running = false;
 #endif
     const int level =
 #ifdef KC_KDE
         KGameDifficulty::global()->currentLevel()->hardness();
 #else
-        1;
+        current_level;
 #endif
     table->create_new_game(level);
     action_pause->setEnabled(true);
@@ -239,8 +277,8 @@ void MainWindow::new_game() {
     }
     action_pause->setText(i18n("&Start"));
     action_pause->setIcon(QIcon::fromTheme("media-playback-start"));
-    if (!action_pause->isChecked()) {
-        action_pause->setChecked(true);
+    if (action_pause->isChecked()) {
+        action_pause->setChecked(false);
     } else {
         pause_game(true);
     }
@@ -251,15 +289,18 @@ void MainWindow::new_game() {
 #ifdef KC_KDE
     KGameDifficulty::global()->setGameRunning(false);
 #endif
-    time_label->setText(i18n("Time: 00:00"));
 }
 
-void MainWindow::force_end_game() const {
+void MainWindow::force_end_game() {
     table->force_game_over();
 #ifdef KC_KDE
     game_clock->pause();
 #else
     if (game_timer) {
+        if (elapsed_running) {
+            elapsed_accumulated_ms += elapsed.elapsed();
+            elapsed_running = false;
+        }
         game_timer->stop();
     }
 #endif
@@ -286,6 +327,10 @@ void MainWindow::on_game_over() {
     game_clock->pause();
 #else
     if (game_timer) {
+        if (elapsed_running) {
+            elapsed_accumulated_ms += elapsed.elapsed();
+            elapsed_running = false;
+        }
         game_timer->stop();
     }
 #endif
@@ -310,11 +355,11 @@ void MainWindow::on_game_over() {
 
     delete scoreDialog;
 #else
-    const QString timeText
+    const QString time_text
         = time_label->text().mid(QStringLiteral("Time: ").size());
     QMessageBox::information(
         this, i18n("Game Over"),
-        i18n("Score: %1/%2\nTime: %3", score.first, score.second, timeText)
+        i18n("Score: %1/%2\nTime: %3", score.first, score.second, time_text)
     );
 #endif
 }
@@ -528,7 +573,7 @@ void MainWindow::configure_settings() {
     delete theme_renderer;
 }
 
-void MainWindow::pause_game(const bool paused) const {
+void MainWindow::pause_game(const bool paused) {
     const bool was_launching = table->is_launching();
     table->pause(paused);
     if (was_launching && !table->is_launching()) {
@@ -543,7 +588,12 @@ void MainWindow::pause_game(const bool paused) const {
         game_clock->pause();
         KGameDifficulty::global()->setGameRunning(false);
 #else
+        game_running = false;
         if (game_timer) {
+            if (elapsed_running) {
+                elapsed_accumulated_ms += elapsed.elapsed();
+                elapsed_running = false;
+            }
             game_timer->stop();
         }
 #endif
@@ -552,7 +602,12 @@ void MainWindow::pause_game(const bool paused) const {
         game_clock->resume();
         KGameDifficulty::global()->setGameRunning(true);
 #else
+        game_running = true;
         if (game_timer) {
+            if (!elapsed_running) {
+                elapsed.restart();
+                elapsed_running = true;
+            }
             game_timer->start(1000);
         }
 #endif
@@ -600,7 +655,7 @@ void MainWindow::card_mode_changed() {
 #ifdef KC_KDE
         = KGameDifficulty::global()->currentLevel()->hardness();
 #else
-        = 1;
+        = current_level;
 #endif
     if (table->is_launching()) {
         table->set_card_mode(level);

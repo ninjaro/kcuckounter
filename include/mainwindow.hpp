@@ -43,6 +43,7 @@ using BaseMainWindow = QMainWindow;
 using ToggleAction = QAction;
 #include <QElapsedTimer>
 #include <QTimer>
+class QActionGroup;
 #endif
 
 class Table;
@@ -61,7 +62,7 @@ private Q_SLOTS:
 
     void new_game();
 
-    void force_end_game() const;
+    void force_end_game();
 
     void on_game_over();
 
@@ -71,7 +72,7 @@ private Q_SLOTS:
 
     void card_mode_changed();
 
-    void pause_game(bool paused) const;
+    void pause_game(bool paused);
 
     void on_score_update(bool inc);
 
@@ -89,6 +90,14 @@ private:
 #else
     QTimer* game_timer = nullptr;
     QElapsedTimer elapsed;
+
+    qint64 elapsed_accumulated_ms = 0;
+    bool elapsed_running = false;
+
+    QActionGroup* difficulty_group = nullptr;
+    int current_level = 1; // 1=Sequential, 3=Random, 10=Simultaneous
+
+    bool game_running = false;
 #endif
     ToggleAction* action_pause = nullptr;
 

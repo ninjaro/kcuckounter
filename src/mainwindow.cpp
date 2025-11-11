@@ -58,11 +58,25 @@
 
 MainWindow::MainWindow(QWidget* parent)
     : BaseMainWindow(parent) {
+#ifdef KC_KDE
     game_clock = new KGameClock(this, KGameClock::FlexibleHourMinSec);
     connect(
         game_clock, &KGameClock::timeChanged, this, &MainWindow::advance_time
     );
-
+#else
+    game_timer = new QTimer(this);
+    connect(game_timer, &QTimer::timeout, this, [this]() {
+        const qint64 secs = elapsed.isValid() ? elapsed.elapsed() / 1000 : 0;
+        const int hh = secs / 3600;
+        const int mm = (secs % 3600) / 60;
+        const int ss = secs % 60;
+        const QString t = QString("%1:%2:%3")
+                              .arg(hh, 2, 10, QLatin1Char('0'))
+                              .arg(mm, 2, 10, QLatin1Char('0'))
+                              .arg(ss, 2, 10, QLatin1Char('0'));
+        advance_time(t);
+    });
+#endif
     score_label->setText(i18n("Score: 0/0"));
     time_label->setText(i18n("Time: 00:00"));
 
@@ -110,6 +124,7 @@ MainWindow::MainWindow(QWidget* parent)
 }
 
 void MainWindow::setup_actions() {
+#ifdef KC_KDE
     KGameStandardAction::gameNew(
         this, &MainWindow::new_game, actionCollection()
     );
@@ -154,6 +169,39 @@ void MainWindow::setup_actions() {
     );
     main_tool_bar->addAction(action_end_game);
     main_tool_bar->addAction(action_pause);
+#else
+    auto* main_tool_bar = addToolBar(i18n("Main Toolbar"));
+    main_tool_bar->setObjectName(QStringLiteral("main_tool_bar"));
+
+    QAction* act_new = new QAction(i18n("&New Game"), this);
+    act_new->setIcon(QIcon::fromTheme(QStringLiteral("document-new")));
+    connect(act_new, &QAction::triggered, this, &MainWindow::new_game);
+    main_tool_bar->addAction(act_new);
+
+    action_end_game = new QAction(i18n("&End Game"), this);
+    action_end_game->setIcon(QIcon::fromTheme(QStringLiteral("process-stop")));
+    action_end_game->setEnabled(false);
+    connect(
+        action_end_game, &QAction::triggered, this, &MainWindow::force_end_game
+    );
+    main_tool_bar->addAction(action_end_game);
+
+    action_pause = new QAction(i18n("&Start"), this);
+    action_pause->setCheckable(true);
+    action_pause->setIcon(
+        QIcon::fromTheme(QStringLiteral("media-playback-start"))
+    );
+    connect(action_pause, &QAction::toggled, this, &MainWindow::pause_game);
+    main_tool_bar->addAction(action_pause);
+
+    QAction* act_prefs = new QAction(i18n("&Settings"), this);
+    act_prefs->setIcon(QIcon::fromTheme(QStringLiteral("configure")));
+    connect(
+        act_prefs, &QAction::triggered, this, &MainWindow::configure_settings
+    );
+    main_tool_bar->addAction(act_prefs);
+
+#endif
 }
 
 void MainWindow::new_game() {
@@ -168,11 +216,23 @@ void MainWindow::new_game() {
         }
         force_end_game();
     }
+#ifdef KC_KDE
     game_clock->restart();
     game_clock->pause();
-    table->create_new_game(
-        KGameDifficulty::global()->currentLevel()->hardness()
-    );
+#else
+    elapsed.restart();
+    if (game_timer) {
+        game_timer->start(1000);
+        game_timer->stop();
+    }
+#endif
+    const int level =
+#ifdef KC_KDE
+        KGameDifficulty::global()->currentLevel()->hardness();
+#else
+        1;
+#endif
+    table->create_new_game(level);
     action_pause->setEnabled(true);
     if (action_end_game) {
         action_end_game->setEnabled(false);
@@ -188,13 +248,21 @@ void MainWindow::new_game() {
     score_label->setText(i18n("Score: 0/0"));
     lives = max_lives;
     update_lives_display();
+#ifdef KC_KDE
     KGameDifficulty::global()->setGameRunning(false);
+#endif
     time_label->setText(i18n("Time: 00:00"));
 }
 
 void MainWindow::force_end_game() const {
     table->force_game_over();
+#ifdef KC_KDE
     game_clock->pause();
+#else
+    if (game_timer) {
+        game_timer->stop();
+    }
+#endif
     action_pause->setEnabled(false);
 }
 
@@ -214,11 +282,19 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 }
 
 void MainWindow::on_game_over() {
+#ifdef KC_KDE
     game_clock->pause();
+#else
+    if (game_timer) {
+        game_timer->stop();
+    }
+#endif
     action_pause->setEnabled(false);
     if (action_end_game) {
         action_end_game->setEnabled(false);
     }
+
+#ifdef KC_KDE
     KGameDifficulty::global()->setGameRunning(false);
     QPointer scoreDialog = new KGameHighScoreDialog(
         KGameHighScoreDialog::Name | KGameHighScoreDialog::Time, this
@@ -233,6 +309,14 @@ void MainWindow::on_game_over() {
         scoreDialog->exec();
 
     delete scoreDialog;
+#else
+    const QString timeText
+        = time_label->text().mid(QStringLiteral("Time: ").size());
+    QMessageBox::information(
+        this, i18n("Game Over"),
+        i18n("Score: %1/%2\nTime: %3", score.first, score.second, timeText)
+    );
+#endif
 }
 
 void MainWindow::advance_time(const QString& elapsed_time) const {
@@ -240,12 +324,19 @@ void MainWindow::advance_time(const QString& elapsed_time) const {
 }
 
 void MainWindow::show_high_scores() {
+#ifdef KC_KDE
     QPointer score_dialog = new KGameHighScoreDialog(
         KGameHighScoreDialog::Name | KGameHighScoreDialog::Time, this
     );
     score_dialog->initFromDifficulty(KGameDifficulty::global());
     score_dialog->exec();
     delete score_dialog;
+#else
+    QMessageBox::information(
+        this, i18n("High Scores"),
+        i18n("High scores are not available without KDE Games.")
+    );
+#endif
 }
 
 void MainWindow::configure_settings() {
@@ -448,11 +539,23 @@ void MainWindow::pause_game(const bool paused) const {
         }
     }
     if (paused) {
+#ifdef KC_KDE
         game_clock->pause();
         KGameDifficulty::global()->setGameRunning(false);
+#else
+        if (game_timer) {
+            game_timer->stop();
+        }
+#endif
     } else {
+#ifdef KC_KDE
         game_clock->resume();
         KGameDifficulty::global()->setGameRunning(true);
+#else
+        if (game_timer) {
+            game_timer->start(1000);
+        }
+#endif
     }
 }
 
@@ -493,7 +596,12 @@ void MainWindow::update_lives_display() const {
 }
 
 void MainWindow::card_mode_changed() {
-    const int level = KGameDifficulty::global()->currentLevel()->hardness();
+    const int level
+#ifdef KC_KDE
+        = KGameDifficulty::global()->currentLevel()->hardness();
+#else
+        = 1;
+#endif
     if (table->is_launching()) {
         table->set_card_mode(level);
     } else {

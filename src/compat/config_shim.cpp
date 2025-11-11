@@ -24,8 +24,7 @@
 
 #include "compat/config_shim.hpp"
 
-#ifdef KC_KDE
-#else
+#ifndef KC_KDE
 
 KConfigGroup::KConfigGroup(const QString& rootGroup)
     : m_root(rootGroup) { }

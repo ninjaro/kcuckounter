@@ -27,14 +27,17 @@
 #include <QCommandLineParser>
 // std
 #include <memory>
+#ifdef KC_KDE
 // KF
 #include <KAboutData>
-#include <KLocalizedString>
+#endif
 // own
+#include "compat/i18n_shim.hpp"
 #include "mainwindow.hpp"
 
 int main(int argc, char* argv[]) {
     const QApplication app(argc, argv);
+#ifdef KC_KDE
     KLocalizedString::setApplicationDomain("kcuckounter");
 
     KAboutData about_data(
@@ -63,7 +66,19 @@ int main(int argc, char* argv[]) {
     about_data.setupCommandLine(&parser);
     parser.process(app);
     about_data.processCommandLine(&parser);
+#else
+    QCoreApplication::setApplicationName(QStringLiteral("kcuckounter"));
+    QCoreApplication::setOrganizationName(QStringLiteral("kcuckounter"));
+    QCoreApplication::setApplicationVersion(QStringLiteral("1.0"));
 
+    QCommandLineParser parser;
+    parser.setApplicationDescription(
+        i18n("A tool for improving arithmetic skills and memory retention.")
+    );
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.process(app);
+#endif
     auto window = std::make_unique<MainWindow>();
     window->show();
 

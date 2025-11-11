@@ -41,6 +41,7 @@ using ToggleAction = KToggleAction;
 using BaseMainWindow = QMainWindow;
 #include <QAction>
 using ToggleAction = QAction;
+#include <QElapsedTimer>
 #include <QTimer>
 #endif
 
@@ -85,6 +86,9 @@ private:
 
 #ifdef KC_KDE
     KGameClock* game_clock = nullptr;
+#else
+    QTimer* game_timer = nullptr;
+    QElapsedTimer elapsed;
 #endif
     ToggleAction* action_pause = nullptr;
 

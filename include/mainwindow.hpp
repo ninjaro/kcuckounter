@@ -27,7 +27,6 @@
 
 // Qt
 #include <QLabel>
-#include <QPointer>
 #include <QSlider>
 #ifdef KC_KDE
 // KF
@@ -42,11 +41,14 @@ using BaseMainWindow = QMainWindow;
 #include <QAction>
 using ToggleAction = QAction;
 #include <QElapsedTimer>
-#include <QTimer>
+class QTimer;
 class QActionGroup;
 #endif
 
 class Table;
+class QStackedWidget;
+class QSpinBox;
+class QPushButton;  // added forward declaration
 
 class MainWindow final : public BaseMainWindow {
     Q_OBJECT
@@ -61,6 +63,7 @@ private Q_SLOTS:
     void load_settings() const;
 
     void new_game();
+    void on_pre_setup_continue();
 
     void force_end_game();
 
@@ -80,7 +83,10 @@ private Q_SLOTS:
 
 private:
     void setup_actions();
-
+    void build_pre_setup_page();
+    void build_game_page();
+    void create_and_wire_table(qint32 slot_count);
+    void destroy_game();
     void closeEvent(QCloseEvent* event) override;
 
     Table* table;
@@ -101,16 +107,22 @@ private:
 #endif
     ToggleAction* action_pause = nullptr;
 
-    QPointer<QLabel> time_label = new QLabel;
-    QPointer<QLabel> score_label = new QLabel;
-    QPointer<QSlider> speed_slider = new QSlider(Qt::Horizontal);
-    QPointer<QLabel> lives_label = new QLabel;
+    QLabel* time_label = nullptr;
+    QLabel* score_label = nullptr;
+    QSlider* speed_slider = nullptr;
+    QLabel* lives_label = nullptr;
 
     int lives = 3;
     int max_lives = 3;
 
     QPair<qint32, qint32> score;
     QAction* action_end_game = nullptr;
+
+    QStackedWidget* stack = nullptr;
+    QWidget* pre_setup_page = nullptr;
+    QWidget* game_page = nullptr;
+    QSpinBox* slots_spin = nullptr;
+    QPushButton* continue_button = nullptr;
 };
 
 #endif // CARD_COUNTER_MAINWINDOW_HPP

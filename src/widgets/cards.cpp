@@ -163,6 +163,15 @@ Cards::Cards(QSvgRenderer* renderer, QWidget* parent)
     , svg_name("back")
     , current_card_id(-1)
     , renderer(renderer) {
+    if (!renderer || !renderer->isValid()) {
+        qCritical() << "Cards: invalid QSvgRenderer";
+        return;
+    }
+    const auto elt = get_card_name_by_current_id(current_card_id);
+    if (!renderer->elementExists(elt)) {
+        qWarning() << "Cards: element missing in deck:" << elt;
+        return;
+    }
     setFixedSize(renderer->boundsOnElement("back").size().toSize());
     pixmap_dirty = true;
 }

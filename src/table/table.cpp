@@ -29,6 +29,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QtMath>
+#include <QFile>
 // own
 #include "strategy/strategyinfo.hpp"
 #include "table/table.hpp"
@@ -41,6 +42,11 @@ Table::Table(QWidget* parent)
 
     layout = new QGridLayout();
     setLayout(layout);
+
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    if (parent) {
+        parent->installEventFilter(this);
+    }
 
     set_card_theme("tigullio-international");
 }
@@ -153,7 +159,7 @@ void Table::calculate_new_column_count(
 ) {
     int best_column_count = 1;
     double best_scale = 0.0;
-    bool rotated = false;
+    bool is_rotated = false;
 
     auto test_orientation = [&](const QSizeF& size, const bool swapped) {
         for (int column_count = 1; column_count <= item_count; column_count++) {
@@ -165,7 +171,7 @@ void Table::calculate_new_column_count(
             if (scale > best_scale) {
                 best_scale = scale;
                 best_column_count = column_count;
-                rotated = swapped;
+                is_rotated = swapped;
             }
         }
     };
@@ -182,28 +188,48 @@ void Table::reorganize_table(
     // for (TableSlot* item : std::as_const(items)) {
     //     layout->removeWidget(item);
     // }
-    while (layout->count()) {
-        const QLayoutItem* item = layout->takeAt(0);
-        item->widget()->hide();
-        delete item;
-    }
-
-    const QSizeF new_fixed_size(
-        new_rotated ? bounds.height() * new_scale : bounds.width() * new_scale,
-        new_rotated ? bounds.width() * new_scale : bounds.height() * new_scale
-    );
-    emit table_slot_resized(new_fixed_size.toSize());
-
-    const qint32 items_count = static_cast<qint32>(items.count());
-    for (qint32 i = 0; i < items_count; i++) {
-        TableSlot* item = items[i];
-        layout->addWidget(item, i / new_column_count, i % new_column_count);
-        item->set_infinite_params(i, items_count);
-        item->show();
-    }
+    // while (layout->count()) {
+    //     const QLayoutItem* item = layout->takeAt(0);
+    //     item->widget()->hide();
+    //     delete item;
+    // }
     column_count = new_column_count;
     scale = new_scale;
     rotated = new_rotated;
+
+    // const QSizeF new_fixed_size(
+    //     new_rotated ? bounds.height() * new_scale : bounds.width() * new_scale,
+    //     new_rotated ? bounds.width() * new_scale : bounds.height() * new_scale
+    // );
+    // emit table_slot_resized(new_fixed_size.toSize());
+
+    const QSizeF card = rotated ? QSizeF(bounds.height(), bounds.width())
+                                : QSizeF(bounds.width(), bounds.height());
+    const int w = qFloor(card.width() * scale);
+    const int h = qFloor(card.height() * scale);
+
+    // const auto items_count = static_cast<qint32>(items.count());
+    // for (qint32 i = 0; i < items_count; i++) {
+    //     TableSlot* item = items[i];
+    //     layout->addWidget(item, i / new_column_count, i % new_column_count);
+    //     item->set_infinite_params(i, items_count);
+    //     item->show();
+    // }
+    for (int i = 0; i < items.size(); ++i) {
+        const int row = i / column_count;
+        const int col = i % column_count;
+        if (!layout->itemAtPosition(row, col)) {
+            layout->addWidget(items[i], row, col);
+        }
+        items[i]->set_target_size(QSize(w, h));   // flexible hint
+    }
+    emit table_slot_resized(QSize(w, h));
+
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    // column_count = new_column_count;
+    // scale = new_scale;
+    // rotated = new_rotated;
 }
 
 void Table::on_swap_target_selected() {
@@ -254,18 +280,37 @@ void Table::pick_up_cards() {
 }
 
 void Table::set_card_theme(const QString& theme) {
-    const QString path = QStandardPaths::locate(
-        QStandardPaths::GenericDataLocation,
-        QString("carddecks/svg-%1/%1.svgz").arg(theme)
-    );
+    const QString rel_svgz = QStringLiteral("carddecks/svg-%1/%1.svgz").arg(theme);
+    const QString rel_svg  = QStringLiteral("carddecks/svg-%1/%1.svg").arg(theme);
+
+    QString path;
+    if (const QString qrc_svgz = QStringLiteral(":/%1").arg(rel_svgz);
+        QFile::exists(qrc_svgz)) {
+        path = qrc_svgz;
+    } else {
+        if (const QString qrc_svg = QStringLiteral(":/%1").arg(rel_svg);
+            QFile::exists(qrc_svg)) {
+            path = qrc_svg;
+        }
+    }
+
+    if (path.isEmpty()) {
+        path = QStandardPaths::locate(QStandardPaths::GenericDataLocation, rel_svgz);
+        if (path.isEmpty()) {
+            path = QStandardPaths::locate(QStandardPaths::GenericDataLocation, rel_svg);
+        }
+    }
+
     if (path.isEmpty()) {
         qWarning("Card theme '%s' could not be found.", qPrintable(theme));
         return;
     }
+
     current_theme = theme;
     delete renderer;
     renderer = new QSvgRenderer(path);
     bounds = renderer->boundsOnElement("back");
+
     const StrategyInfo* old_strategy_info = strategy_info;
     strategy_info = new StrategyInfo(renderer);
     for (TableSlot* slot : items) {
@@ -273,10 +318,10 @@ void Table::set_card_theme(const QString& theme) {
         slot->set_strategies(strategy_info);
     }
     delete old_strategy_info;
-    calculate_new_column_count(
-        size(), bounds.size(), static_cast<qint32>(items.count())
-    );
+
+    calculate_new_column_count(size(), bounds.size(), static_cast<qint32>(items.count()));
 }
+
 
 void Table::create_new_game(const int level) {
     countdown->stop();
@@ -290,7 +335,9 @@ void Table::create_new_game(const int level) {
     available.clear();
     jokers.clear();
     order_index = 0;
-    table_slot_count_limit = 1;
+
+    table_slot_count_limit = qMax<qint32>(1, initial_slot_count);
+
     switch (static_cast<qint32>(level)) {
     case 1:
         mode = card_mode::Ordered;
@@ -304,7 +351,11 @@ void Table::create_new_game(const int level) {
     default:
         break;
     }
-    add_new_table_slot();
+
+    while (items.count() < table_slot_count_limit) {
+        add_new_table_slot(true);
+    }
+
     calculate_new_column_count(
         size(), bounds.size(), static_cast<qint32>(items.count())
     );
@@ -357,10 +408,33 @@ void Table::force_game_over() {
 
 void Table::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
-
-    calculate_new_column_count(
-        size(), bounds.size(), static_cast<qint32>(items.count())
-    );
+    recalculate_layout();
 }
 
+void Table::showEvent(QShowEvent* event) {
+    QWidget::showEvent(event);
+    recalculate_layout();
+}
+
+bool Table::eventFilter(QObject* o, QEvent* e) {
+    if ((o == parent()) && (e->type() == QEvent::Resize || e->type() == QEvent::LayoutRequest)) {
+        recalculate_layout();
+    }
+    return QWidget::eventFilter(o, e);
+}
+
+QSize Table::sizeHint() const { return QWidget::sizeHint(); }
+
+QSize Table::minimumSizeHint() const { return QSize(100, 100); }
+
 void Table::on_strategy_info_assist() const { strategy_info->show(); }
+
+void Table::set_initial_slot_count(const qint32 n) {
+    initial_slot_count = qMax<qint32>(1, n);
+}
+
+void Table::recalculate_layout() {
+    if (items.isEmpty() || bounds.isEmpty())
+        return;
+    calculate_new_column_count(size(), bounds.size(), static_cast<int>(items.count()));
+}

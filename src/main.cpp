@@ -49,15 +49,15 @@ int main(int argc, char* argv[]) {
             "strategies. "
         ),
         KAboutLicense::MIT, i18n("(c) 2025, Yaroslav Riabtsev"), QString(),
-        QStringLiteral("https://github.com/YaRiabtsev/kcuckounter"),
+        QStringLiteral("https://github.com/ninjaro/kcuckounter"),
         QStringLiteral("yaroslav.riabtsev@rwth-aachen.de")
     );
 
     about_data.addAuthor(
         i18n("Yaroslav Riabtsev"), i18n("Original author"),
         QStringLiteral("yaroslav.riabtsev@rwth-aachen.de"),
-        QStringLiteral("https://github.com/YaRiabtsev"),
-        QStringLiteral("yariabtsev")
+        QStringLiteral("https://github.com/ninjaro"),
+        QStringLiteral("ninjaro")
     );
 
     KAboutData::setApplicationData(about_data);

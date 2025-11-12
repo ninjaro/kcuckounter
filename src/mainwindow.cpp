@@ -25,6 +25,8 @@
 // Qt
 #include <QCheckBox>
 #include <QCloseEvent>
+#include <QStackedWidget>
+#include <QSpinBox>
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDir>
@@ -39,6 +41,9 @@
 #include <QSvgRenderer>
 #include <QToolBar>
 #include <QVBoxLayout>
+#include <QPointer>
+#include  <QTimer>
+#include <QFile>
 #ifdef KC_KDE
 // KDEGames
 #include <KGameClock>
@@ -60,6 +65,10 @@
 
 MainWindow::MainWindow(QWidget* parent)
     : BaseMainWindow(parent) {
+    time_label = new QLabel(this);
+    score_label = new QLabel(this);
+    speed_slider = new QSlider(Qt::Horizontal, this);
+    lives_label = new QLabel(this);
 #ifdef KC_KDE
     game_clock = new KGameClock(this, KGameClock::FlexibleHourMinSec);
     connect(
@@ -99,11 +108,12 @@ MainWindow::MainWindow(QWidget* parent)
     statusBar()->insertPermanentWidget(2, speed_slider);
     statusBar()->insertPermanentWidget(3, lives_label);
 
-    table = new Table;
-    connect(speed_slider, &QSlider::valueChanged, table, &Table::set_speed);
-    table->set_speed(speed_slider->value());
-    connect(table, &Table::score_update, this, &MainWindow::on_score_update);
-    connect(table, &Table::game_over, this, &MainWindow::on_game_over);
+    // removed: immediate Table construction and wiring
+    // table = new Table;
+    // connect(speed_slider, &QSlider::valueChanged, table, &Table::set_speed);
+    // table->set_speed(speed_slider->value());
+    // connect(table, &Table::score_update, this, &MainWindow::on_score_update);
+    // connect(table, &Table::game_over, this, &MainWindow::on_game_over);
 
     const Settings& opts = Settings::instance();
     connect(
@@ -115,17 +125,46 @@ MainWindow::MainWindow(QWidget* parent)
     connect(
         &opts, &Settings::show_speed_changed, speed_slider, &QWidget::setVisible
     );
-    connect(
-        &opts, &Settings::card_theme_changed, table, &Table::set_card_theme
-    );
-    connect(
-        &opts, &Settings::card_border_changed, table,
-        qOverload<>(&QWidget::update)
-    );
+    // moved into create_and_wire_table():
+    // connect(&opts, &Settings::card_theme_changed, table, &Table::set_card_theme);
+    // connect(&opts, &Settings::card_border_changed, table, qOverload<>(&QWidget::update));
 
-    setCentralWidget(table);
+    // Build stacked UI (pre-setup + game pages)
+    stack = new QStackedWidget(this);
+    build_pre_setup_page();
+    build_game_page();
+    setCentralWidget(stack);
+    stack->setCurrentWidget(pre_setup_page);
+
     setup_actions();
-    new_game();
+
+    // Pre-setup state: disable game-only actions and ensure timers are paused.
+    if (action_pause) {
+        action_pause->setEnabled(false);
+        action_pause->setText(i18n("&Start"));
+        action_pause->setIcon(QIcon::fromTheme("media-playback-start"));
+        if (action_pause->isChecked()) {
+            action_pause->setChecked(false);
+        }
+    }
+    if (action_end_game) {
+        action_end_game->setEnabled(false);
+    }
+#ifdef KC_KDE
+    game_clock->pause();
+#else
+    elapsed_accumulated_ms = 0;
+    elapsed_running = false;
+    if (game_timer) {
+        game_timer->stop();
+    }
+    advance_time(QStringLiteral("00:00:00"));
+    game_running = false;
+#endif
+
+    // No auto-start
+    // new_game();
+
     load_settings();
 }
 
@@ -251,48 +290,105 @@ void MainWindow::new_game() {
         }
         force_end_game();
     }
+
+    // Reset timers and UI, disable game-only actions.
 #ifdef KC_KDE
     game_clock->restart();
     game_clock->pause();
+    KGameDifficulty::global()->setGameRunning(false);
 #else
     elapsed_accumulated_ms = 0;
     elapsed_running = false;
-    elapsed.invalidate();
     if (game_timer) {
         game_timer->stop();
     }
     advance_time(QStringLiteral("00:00:00"));
     game_running = false;
 #endif
+    score = { 0, 0 };
+    score_label->setText(i18n("Score: 0/0"));
+    lives = max_lives;
+    update_lives_display();
+
+    if (action_pause) {
+        action_pause->setEnabled(false);
+        action_pause->setText(i18n("&Start"));
+        action_pause->setIcon(QIcon::fromTheme("media-playback-start"));
+        if (action_pause->isChecked()) {
+            action_pause->setChecked(false);
+        }
+    }
+    if (action_end_game) {
+        action_end_game->setEnabled(false);
+    }
+
+    // Destroy current game (if any) and go back to pre-setup.
+    destroy_game();
+    if (stack && pre_setup_page) {
+        stack->setCurrentWidget(pre_setup_page);
+    }
+}
+
+void MainWindow::on_pre_setup_continue() {
+    const int slot_count = qMax(1, slots_spin ? slots_spin->value() : 1);
+
+    create_and_wire_table(slot_count);
+
     const int level =
 #ifdef KC_KDE
         KGameDifficulty::global()->currentLevel()->hardness();
 #else
         current_level;
 #endif
+
+    table->set_initial_slot_count(slot_count);
     table->create_new_game(level);
-    action_pause->setEnabled(true);
-    if (action_end_game) {
-        action_end_game->setEnabled(false);
+
+    // Reset timers to zero but keep paused until Start.
+#ifdef KC_KDE
+    game_clock->restart();
+    game_clock->pause();
+    KGameDifficulty::global()->setGameRunning(false);
+#else
+    elapsed_accumulated_ms = 0;
+    elapsed_running = false;
+    if (game_timer) {
+        game_timer->stop();
     }
-    action_pause->setText(i18n("&Start"));
-    action_pause->setIcon(QIcon::fromTheme("media-playback-start"));
-    if (action_pause->isChecked()) {
-        action_pause->setChecked(false);
-    } else {
-        pause_game(true);
-    }
+    advance_time(QStringLiteral("00:00:00"));
+    game_running = false;
+#endif
+
+    // Reset score/lives.
     score = { 0, 0 };
     score_label->setText(i18n("Score: 0/0"));
     lives = max_lives;
     update_lives_display();
-#ifdef KC_KDE
-    KGameDifficulty::global()->setGameRunning(false);
-#endif
+
+    // Prepare actions for a not-yet-started game.
+    if (action_pause) {
+        action_pause->setEnabled(true);
+        action_pause->setText(i18n("&Start"));
+        action_pause->setIcon(QIcon::fromTheme("media-playback-start"));
+        if (action_pause->isChecked()) {
+            action_pause->setChecked(false);
+        } else {
+            pause_game(true);
+        }
+    }
+    if (action_end_game) {
+        action_end_game->setEnabled(false);
+    }
+
+    if (stack && game_page) {
+        stack->setCurrentWidget(game_page);
+    }
 }
 
 void MainWindow::force_end_game() {
-    table->force_game_over();
+    if (table) {
+        table->force_game_over();
+    }
 #ifdef KC_KDE
     game_clock->pause();
 #else
@@ -304,7 +400,9 @@ void MainWindow::force_end_game() {
         game_timer->stop();
     }
 #endif
-    action_pause->setEnabled(false);
+    if (action_pause) {
+        action_pause->setEnabled(false);
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
@@ -341,19 +439,20 @@ void MainWindow::on_game_over() {
 
 #ifdef KC_KDE
     KGameDifficulty::global()->setGameRunning(false);
-    QPointer scoreDialog = new KGameHighScoreDialog(
+    QPointer<KGameHighScoreDialog> score_dialog = new KGameHighScoreDialog(
         KGameHighScoreDialog::Name | KGameHighScoreDialog::Time, this
     );
-    scoreDialog->initFromDifficulty(KGameDifficulty::global());
+    score_dialog->initFromDifficulty(KGameDifficulty::global());
     KGameHighScoreDialog::FieldInfo scoreInfo;
     scoreInfo[KGameHighScoreDialog::Score]
         = i18n("%1/%2", score.first, score.second);
     scoreInfo[KGameHighScoreDialog::Time] = game_clock->timeString();
 
-    if (scoreDialog->addScore(scoreInfo, KGameHighScoreDialog::LessIsMore) != 0)
-        scoreDialog->exec();
+    if (score_dialog->addScore(scoreInfo, KGameHighScoreDialog::LessIsMore) != 0) {
+        score_dialog->exec();
+    }
 
-    delete scoreDialog;
+    delete score_dialog;
 #else
     const QString time_text
         = time_label->text().mid(QStringLiteral("Time: ").size());
@@ -370,7 +469,7 @@ void MainWindow::advance_time(const QString& elapsed_time) const {
 
 void MainWindow::show_high_scores() {
 #ifdef KC_KDE
-    QPointer score_dialog = new KGameHighScoreDialog(
+    QPointer<KGameHighScoreDialog> score_dialog = new KGameHighScoreDialog(
         KGameHighScoreDialog::Name | KGameHighScoreDialog::Time, this
     );
     score_dialog->initFromDifficulty(KGameDifficulty::global());
@@ -384,6 +483,31 @@ void MainWindow::show_high_scores() {
 #endif
 }
 
+static QString findDeckSvg(const QString& id) {
+    const auto rel_svgz = QStringLiteral("carddecks/svg-%1/%1.svgz").arg(id);
+    const auto rel_svg = QStringLiteral("carddecks/svg-%1/%1.svg").arg(id);
+
+#ifdef Q_OS_ANDROID
+    const QString qrc_svgz = QStringLiteral(":/%1").arg(rel_svgz);
+    if (QFile::exists(qrc_svgz)) {
+        return qrc_svgz;
+    }
+    const QString qrc_svg = QStringLiteral(":/%1").arg(rel_svg);
+    if (QFile::exists(qrc_svg)) {
+        return qrc_svg;
+    }
+#endif
+
+    QString path
+        = QStandardPaths::locate(QStandardPaths::GenericDataLocation, rel_svgz);
+    if (path.isEmpty()) {
+        path = QStandardPaths::locate(
+            QStandardPaths::GenericDataLocation, rel_svg
+        );
+    }
+    return path;
+}
+
 void MainWindow::configure_settings() {
     Settings& opts = Settings::instance();
 
@@ -392,52 +516,73 @@ void MainWindow::configure_settings() {
 
     auto* tabs = new QTabWidget(&dialog);
     auto* general = new QWidget;
-    auto* generalForm = new QFormLayout(general);
+    auto* general_form = new QFormLayout(general);
 
     auto* indexing = new QCheckBox(general);
     indexing->setChecked(opts.indexing());
-    generalForm->addRow(indexing, new QLabel(i18n("Use card indexing")));
+    general_form->addRow(indexing, new QLabel(i18n("Use card indexing")));
 
     auto* strategy_hint = new QCheckBox(general);
     strategy_hint->setChecked(opts.strategy_hint());
-    generalForm->addRow(
+    general_form->addRow(
         strategy_hint, new QLabel(i18n("Add name of strategy"))
     );
 
     auto* training = new QCheckBox(general);
     training->setChecked(opts.training());
-    generalForm->addRow(training, new QLabel(i18n("Is training")));
+    general_form->addRow(training, new QLabel(i18n("Is training")));
 
     auto* show_time = new QCheckBox(general);
     show_time->setChecked(opts.show_time());
-    generalForm->addRow(show_time, new QLabel(i18n("Show time")));
+    general_form->addRow(show_time, new QLabel(i18n("Show time")));
 
     auto* show_score = new QCheckBox(general);
     show_score->setChecked(opts.show_score());
-    generalForm->addRow(show_score, new QLabel(i18n("Show score")));
+    general_form->addRow(show_score, new QLabel(i18n("Show score")));
 
     auto* show_speed = new QCheckBox(general);
     show_speed->setChecked(opts.show_speed());
-    generalForm->addRow(show_speed, new QLabel(i18n("Show speed control")));
+    general_form->addRow(show_speed, new QLabel(i18n("Show speed control")));
 
     auto* infinity_mode = new QCheckBox(general);
     infinity_mode->setChecked(opts.infinity_mode());
-    generalForm->addRow(infinity_mode, new QLabel(i18n("Infinity mode")));
+    general_form->addRow(infinity_mode, new QLabel(i18n("Infinity mode")));
 
     // theme page with preview
     auto* theme_page = new QWidget;
     auto* theme_layout = new QVBoxLayout(theme_page);
     auto* theme_combo = new QComboBox(theme_page);
-    const QDir card_dir(QStringLiteral("/usr/share/carddecks"));
-    for (const QStringList dirs
-         = card_dir.entryList(QStringList() << "svg-*", QDir::Dirs);
-         const QString& dir : dirs) {
-        const QString id = dir.mid(4);
-        QSettings deck(
-            card_dir.filePath(dir + "/index.desktop"), QSettings::IniFormat
-        );
-        const QString name = deck.value(QStringLiteral("Name"), id).toString();
-        theme_combo->addItem(name, id);
+    // const QDir card_dir(QStringLiteral("/usr/share/carddecks"));
+    // for (const QStringList dirs
+    //      = card_dir.entryList(QStringList() << "svg-*", QDir::Dirs);
+    //      const QString& dir : dirs) {
+    //     const QString id = dir.mid(4);
+    //     QSettings deck(
+    //         card_dir.filePath(dir + "/index.desktop"), QSettings::IniFormat
+    //     );
+    //     const QString name = deck.value(QStringLiteral("Name"),
+    //     id).toString(); theme_combo->addItem(name, id);
+    // }
+    auto add_deck_from = [&](const QString& base, bool isQrc) {
+        QDir d(base);
+        const auto dirs = d.entryList(QStringList() << "svg-*", QDir::Dirs);
+        for (const QString& dir : dirs) {
+            const QString id = dir.mid(4);
+            QString idx = isQrc
+                ? QStringLiteral(":/carddecks/%1/index.desktop").arg(dir)
+                : QDir(base).filePath(dir + "/index.desktop");
+            QSettings deck(idx, QSettings::IniFormat);
+            const QString name
+                = deck.value(QStringLiteral("Name"), id).toString();
+            theme_combo->addItem(name, id);
+        }
+    };
+
+#ifdef Q_OS_ANDROID
+    add_deck_from(QStringLiteral(":/carddecks"), /*isQrc=*/true);
+#endif
+    if (QDir(QStringLiteral("/usr/share/carddecks")).exists()) {
+        add_deck_from(QStringLiteral("/usr/share/carddecks"), /*isQrc=*/false);
     }
     for (int i = 0; i < theme_combo->count(); ++i) {
         if (theme_combo->itemData(i).toString() == opts.card_theme()) {
@@ -451,10 +596,7 @@ void MainWindow::configure_settings() {
     auto* carousel = new Carousel(QSizeF(60, 90));
 
     auto update_preview = [&](const QString& id) {
-        const QString path = QStandardPaths::locate(
-            QStandardPaths::GenericDataLocation,
-            QStringLiteral("carddecks/svg-%1/%1.svgz").arg(id)
-        );
+        const QString path = findDeckSvg(id);
         if (path.isEmpty()) {
             QMessageBox::warning(
                 this, i18n("Missing Theme"),
@@ -463,7 +605,11 @@ void MainWindow::configure_settings() {
             return;
         }
         delete theme_renderer;
-        theme_renderer = new QSvgRenderer(path);
+        theme_renderer = new QSvgRenderer(path, this);
+        if (!theme_renderer->isValid()) {
+            qCritical() << "Failed to load deck SVG:" << path;
+            return;
+        }
         if (preview_cards.isEmpty()) {
             const auto deck = Cards::generate_deck(1);
             for (const qint32 c : deck) {
@@ -574,6 +720,9 @@ void MainWindow::configure_settings() {
 }
 
 void MainWindow::pause_game(const bool paused) {
+    if (!table) {
+        return;
+    }
     const bool was_launching = table->is_launching();
     table->pause(paused);
     if (was_launching && !table->is_launching()) {
@@ -619,7 +768,9 @@ void MainWindow::load_settings() const {
     score_label->setVisible(opts.show_score());
     time_label->setVisible(opts.show_time());
     speed_slider->setVisible(opts.show_speed());
-    table->set_card_theme(opts.card_theme());
+    if (table) {
+        table->set_card_theme(opts.card_theme());
+    }
 }
 
 void MainWindow::on_score_update(const bool inc) {
@@ -657,9 +808,84 @@ void MainWindow::card_mode_changed() {
 #else
         = current_level;
 #endif
+    if (!table) {
+        return; // stay in pre-setup; do not auto-start
+    }
     if (table->is_launching()) {
         table->set_card_mode(level);
     } else {
         new_game();
     }
 }
+
+// Build pre-setup page: spin + continue button.
+void MainWindow::build_pre_setup_page() {
+    pre_setup_page = new QWidget(this);
+    pre_setup_page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    auto* layout = new QVBoxLayout(pre_setup_page);
+    slots_spin = new QSpinBox(pre_setup_page);
+    slots_spin->setMinimum(1);
+    slots_spin->setValue(1);
+    continue_button = new QPushButton(i18n("Set up / Continue"), pre_setup_page);
+    layout->addWidget(slots_spin);
+    layout->addWidget(continue_button);
+    layout->addStretch(1);
+    connect(continue_button, &QPushButton::clicked, this, &MainWindow::on_pre_setup_continue);
+    stack->addWidget(pre_setup_page);
+}
+
+// Build empty game page (Table will be added later).
+void MainWindow::build_game_page() {
+    game_page = new QWidget(this);
+    game_page->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    auto* layout = new QVBoxLayout(game_page);
+    stack->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    stack->setContentsMargins(0, 0, 0, 0);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    stack->addWidget(game_page);
+    game_page->layout()->setSizeConstraint(QLayout::SetNoConstraint);
+}
+
+// Create Table, wire it, and attach to game page.
+void MainWindow::create_and_wire_table(qint32 /*slot_count*/) {
+    destroy_game();
+
+    table = new Table(game_page);
+    table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    auto* layout = qobject_cast<QVBoxLayout*>(game_page->layout());
+    if (!layout) {
+        layout = new QVBoxLayout(game_page);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(0);
+    }
+    layout->addWidget(table);
+
+    connect(speed_slider, &QSlider::valueChanged, table, &Table::set_speed);
+    table->set_speed(speed_slider->value());
+    connect(table, &Table::score_update, this, &MainWindow::on_score_update);
+    connect(table, &Table::game_over, this, &MainWindow::on_game_over);
+
+    const Settings& opts = Settings::instance();
+    connect(&opts, &Settings::card_theme_changed, table, &Table::set_card_theme);
+    connect(&opts, &Settings::card_border_changed, table, qOverload<>(&QWidget::update));
+
+    load_settings();
+
+    QTimer::singleShot(0, table, &Table::recalculate_layout); // after insert
+}
+
+// Remove and delete Table from the game page.
+void MainWindow::destroy_game() {
+    if (!table) {
+        return;
+    }
+    if (auto* layout = qobject_cast<QVBoxLayout*>(game_page->layout())) {
+        layout->removeWidget(table);
+    }
+    table->deleteLater();
+    table = nullptr;
+}
+

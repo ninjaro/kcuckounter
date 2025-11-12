@@ -179,7 +179,12 @@ StrategyInfo::StrategyInfo(
     description_input->hide();
 }
 
-Strategy* StrategyInfo::get_strategy_by_id(const qint32 id) {
+Strategy* StrategyInfo::get_strategy_by_id(const qint32 id) const {
+    if (id < 0 || id >= items.size()) {
+        qWarning() << "get_strategy_by_id: out of range:" << id
+                   << "(size:" << items.size() << ")";
+        return nullptr;
+    }
     return items[id];
 }
 

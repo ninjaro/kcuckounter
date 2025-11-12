@@ -61,6 +61,8 @@ public slots:
 public Q_SLOTS:
     void set_speed(int interval_ms) const;
     void force_game_over();
+    void set_initial_slot_count(qint32 n);  // new: configure initial active slots
+    void recalculate_layout();
 
 signals:
 
@@ -96,6 +98,11 @@ private Q_SLOTS:
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    bool eventFilter(QObject* o, QEvent* e) override;
+    QSize sizeHint() const override;
+
+    QSize minimumSizeHint() const override;
 
 private:
     void add_new_table_slot(bool is_active = false);
@@ -147,6 +154,8 @@ private:
     QVector<TableSlot*> items;
     QSet<qint32> jokers;
     QSet<qint32> available;
+
+    qint32 initial_slot_count = 1; // new: starting active slots
 };
 
 #endif // CARD_COUNTER_TABLE_HPP

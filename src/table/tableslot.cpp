@@ -50,6 +50,9 @@ TableSlot::TableSlot(
     : Cards(renderer, parent)
     , highlight_opacity(0.0)
     , strategies(strategies) {
+
+    Q_ASSERT_X(this->strategies, "TableSlot", "StrategyInfo* must not be null");
+
     highlight_anim = new QPropertyAnimation(this, "highlight_opacity", this);
     highlight_anim->setDuration(500);
 
@@ -58,19 +61,30 @@ TableSlot::TableSlot(
     index_label = new CCLabel("0/0");
     weight_label = new CCLabel("weight: 0");
     strategy_hint_label = new CCLabel("");
-    on_strategy_changed(0);
+    // on_strategy_changed(0);
 
     // QComboBoxes:
     strategy_box = new QComboBox();
     on_new_strategy();
-    connect(
-        strategies, &StrategyInfo::new_strategy, this,
-        &TableSlot::on_new_strategy
-    );
+    if (this->strategies) {
+        connect(
+            this->strategies, &StrategyInfo::new_strategy, this,
+            &TableSlot::on_new_strategy
+        );
+    }
     connect(
         strategy_box, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
         &TableSlot::on_strategy_changed
     );
+
+    if (strategy_box->count() > 0) {
+        strategy_box->setCurrentIndex(0);
+    } else {
+        qWarning() << "No strategies available; leaving 'strategy' null";
+        strategy = nullptr;
+        strategy_hint_label->setText(QString());
+    }
+
     Settings& opts = Settings::instance();
     index_label->setVisible(opts.indexing());
     strategy_hint_label->setVisible(opts.strategy_hint());
@@ -296,10 +310,12 @@ void TableSlot::pick_up_card() {
     }
     if (is_joker()) {
         user_quizzing();
-    } else {
+    } else if (strategy) {
         current_weight
             = strategy->update_weight(current_weight, get_current_rank());
         weight_label->setText(i18n("weight: %1", current_weight));
+    } else {
+        qWarning() << "No active strategy; skipping weight update";
     }
     start_highlight();
 }
@@ -348,6 +364,19 @@ void TableSlot::set_infinite_params(const int idx, const int total) {
     total_slots = total > 0 ? total : 1;
 }
 
+void TableSlot::set_target_size(const QSize& s) {
+    target_size = s;
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    updateGeometry();
+}
+
+QSize TableSlot::sizeHint() const {
+    if (!target_size.isEmpty()){
+        return target_size;
+    }
+    return QSize(60, 90);
+}
+
 void TableSlot::set_strategies(StrategyInfo* info) {
     if (strategies == info) {
         return;
@@ -369,20 +398,45 @@ void TableSlot::set_strategies(StrategyInfo* info) {
 }
 
 void TableSlot::on_new_strategy() const {
+    if (!strategies) {
+        qWarning() << "on_new_strategy called with null strategies";
+        return;
+    }
     QStringList items;
     for (const auto& item : strategies->get_strategies()) {
         items.push_back(item->get_name());
     }
-    items.pop_back(); // last is fake
+    if (!items.isEmpty()) {
+        items.removeLast();
+    }
+    strategy_box->blockSignals(true);
     strategy_box->clear();
     strategy_box->addItems(items);
+    strategy_box->blockSignals(false);
+    // items.pop_back(); // last is fake
 }
 
 void TableSlot::on_strategy_changed(const int index) {
-    if (index >= 0) {
-        strategy = strategies->get_strategy_by_id(index);
-        strategy_hint_label->setText(strategy->get_name());
+    if (!strategies) {
+        qWarning() << "on_strategy_changed with null strategies";
+        strategy = nullptr;
+        strategy_hint_label->setText(QString());
+        return;
     }
+    if (index < 0) {
+        strategy = nullptr;
+        strategy_hint_label->setText(QString());
+        return;
+    }
+    Strategy* s = strategies->get_strategy_by_id(index);
+    if (!s) {
+        qWarning() << "Strategy id not found:" << index;
+        strategy = nullptr;
+        strategy_hint_label->setText(QString());
+        return;
+    }
+    strategy = s;
+    strategy_hint_label->setText(strategy->get_name());
 }
 
 void TableSlot::paintEvent(QPaintEvent* event) {

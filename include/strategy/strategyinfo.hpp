@@ -61,7 +61,7 @@ public:
     /**
      * @brief Retrieve a strategy object by its index.
      */
-    Strategy* get_strategy_by_id(qint32 id);
+    Strategy* get_strategy_by_id(qint32 id) const;
 
     /**
      * @brief Display the strategy details for the given name.

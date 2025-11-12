@@ -116,14 +116,45 @@ target_link_libraries(kcuckounter_lib
 target_include_directories(kcuckounter_lib PUBLIC include)
 
 set_target_properties(kcuckounter_lib PROPERTIES UNITY_BUILD OFF)
+if(ANDROID)
+    set(CARDDECKS_ROOT "/usr/share/carddecks")
+    set(CARDDECKS_STAGING "${CMAKE_CURRENT_BINARY_DIR}/_carddecks")
+    file(REMOVE_RECURSE "${CARDDECKS_STAGING}")
+    file(MAKE_DIRECTORY "${CARDDECKS_STAGING}")
 
-add_executable(kcuckounter src/main.cpp)
+    file(GLOB DECK_DIRS "${CARDDECKS_ROOT}/svg-*")
+    foreach(dir ${DECK_DIRS})
+        get_filename_component(deckname "${dir}" NAME)
+        file(COPY "${dir}/" DESTINATION "${CARDDECKS_STAGING}/${deckname}/"
+             FILES_MATCHING
+               PATTERN "*"
+               PATTERN ".git*" EXCLUDE
+               PATTERN "*.po" EXCLUDE
+               PATTERN "CMakeLists.txt" EXCLUDE)
+    endforeach()
+
+    file(GLOB_RECURSE STAGED_FILES RELATIVE "${CARDDECKS_STAGING}" "${CARDDECKS_STAGING}/*")
+
+    qt_add_resources(kcuckounter_lib decks
+        PREFIX "/carddecks"
+        BASE   "${CARDDECKS_STAGING}"
+        FILES  ${STAGED_FILES}
+    )
+endif()
+qt_add_executable(kcuckounter
+        MANUAL_FINALIZATION
+        src/main.cpp
+)
 
 target_link_libraries(kcuckounter PRIVATE
         kcuckounter_lib)
 target_compile_definitions(kcuckounter_lib PUBLIC  $<$<BOOL:${KDE}>:KC_KDE>)
 target_compile_definitions(kcuckounter     PRIVATE $<$<BOOL:${KDE}>:KC_KDE>)
 
+if(ANDROID)
+    set_property(TARGET kcuckounter PROPERTY QT_ANDROID_PACKAGE_NAME org.example.kcuckounter)
+endif()
+qt_finalize_executable(kcuckounter)
 
 if (KDE)
     set(_INSTALL_ARGS ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
@@ -133,4 +164,6 @@ else()
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif ()
-install(TARGETS kcuckounter ${_INSTALL_ARGS})
+if (NOT ANDROID)
+    install(TARGETS kcuckounter ${_INSTALL_ARGS})
+endif()

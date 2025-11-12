@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(kcuckounter)
+project(kcuckounter LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(KDE "Enable KDE Frameworks and KDEGames integration" OFF)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(
             -Og -g -fno-omit-frame-pointer
             -Werror
@@ -27,143 +27,89 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
             -Wsign-conversion
             -Wsign-promo
     )
-elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=native -DNDEBUG")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s")
-endif ()
+endif()
 
+set(qt_min_version "6.0.0")
 
-set(QT_MIN_VERSION "6.0.0")
-if (KDE)
-    set(KF6_MIN_VERSION "6.0.0")
+if(KDE)
+    set(kf6_min_version "6.0.0")
     find_package(ECM 1.0.0 REQUIRED NO_MODULE)
     set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
     include(KDEInstallDirs)
     include(KDECMakeSettings)
     include(KDECompilerSettings NO_POLICY_SCOPE)
-else ()
+else()
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
     include(GNUInstallDirs)
-endif ()
+endif()
 
 include(FeatureSummary)
 
-find_package(Qt6 ${QT_MIN_VERSION} CONFIG REQUIRED
-        COMPONENTS Core Widgets Svg Quick Test
-)
+find_package(Qt6 ${qt_min_version} CONFIG REQUIRED COMPONENTS Core Widgets)
 
-if (KDE)
-    find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
-            CoreAddons I18n XmlGui ConfigWidgets WidgetsAddons KIO
+if(KDE)
+    find_package(KF6 ${kf6_min_version} REQUIRED COMPONENTS
+            CoreAddons
+            I18n
+            XmlGui
+            ConfigWidgets
+            WidgetsAddons
+            KIO
     )
     find_package(KDEGames6 REQUIRED)
-endif ()
-feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
+endif()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(kcuckounter_HEADERS
-        include/mainwindow.hpp
-        include/table/table.hpp
-        include/table/tableslot.hpp
-        include/settings.hpp
-        include/strategy/strategyinfo.hpp
-        include/strategy/strategy.hpp
-        include/widgets/cards.hpp
-        include/widgets/carousel.hpp
-        include/widgets/base/label.hpp
-        include/widgets/base/frame.hpp
-        include/compat/i18n_shim.hpp
-        include/compat/config_shim.hpp)
+qt_add_executable(kcuckounter
+        MANUAL_FINALIZATION
+        src/main.cpp
+        src/main_window.cpp
+        include/main_window.hpp
+)
 
-set(kcuckounter_SOURCES
-        src/mainwindow.cpp
-        src/table/table.cpp
-        src/table/tableslot.cpp
-        src/settings.cpp
-        src/strategy/strategyinfo.cpp
-        src/strategy/strategy.cpp
-        src/widgets/carousel.cpp
-        src/widgets/cards.cpp
-        src/widgets/base/label.cpp
-        src/widgets/base/frame.cpp
-        src/compat/config_shim.cpp)
+target_include_directories(kcuckounter PRIVATE include)
 
-add_library(kcuckounter_lib STATIC
-        ${kcuckounter_HEADERS}
-        ${kcuckounter_SOURCES}
-        ${kcuckounter_resources})
-
-
-target_link_libraries(kcuckounter_lib
-        PUBLIC
+target_link_libraries(kcuckounter
+        PRIVATE
+        Qt6::Core
         Qt6::Widgets
-        Qt6::Svg
         $<$<BOOL:${KDE}>:
-        KF6::CoreAddons;
-        KF6::I18n;
-        KF6::XmlGui;
-        KF6::ConfigWidgets;
-        KF6::WidgetsAddons;
-        KF6::KIOCore;
+        KF6::CoreAddons
+        KF6::I18n
+        KF6::XmlGui
+        KF6::ConfigWidgets
+        KF6::WidgetsAddons
+        KF6::KIOCore
         KDEGames6
         >
 )
 
-target_include_directories(kcuckounter_lib PUBLIC include)
-
-set_target_properties(kcuckounter_lib PROPERTIES UNITY_BUILD OFF)
-if(ANDROID)
-    set(CARDDECKS_ROOT "/usr/share/carddecks")
-    set(CARDDECKS_STAGING "${CMAKE_CURRENT_BINARY_DIR}/_carddecks")
-    file(REMOVE_RECURSE "${CARDDECKS_STAGING}")
-    file(MAKE_DIRECTORY "${CARDDECKS_STAGING}")
-
-    file(GLOB DECK_DIRS "${CARDDECKS_ROOT}/svg-*")
-    foreach(dir ${DECK_DIRS})
-        get_filename_component(deckname "${dir}" NAME)
-        file(COPY "${dir}/" DESTINATION "${CARDDECKS_STAGING}/${deckname}/"
-             FILES_MATCHING
-               PATTERN "*"
-               PATTERN ".git*" EXCLUDE
-               PATTERN "*.po" EXCLUDE
-               PATTERN "CMakeLists.txt" EXCLUDE)
-    endforeach()
-
-    file(GLOB_RECURSE STAGED_FILES RELATIVE "${CARDDECKS_STAGING}" "${CARDDECKS_STAGING}/*")
-
-    qt_add_resources(kcuckounter_lib decks
-        PREFIX "/carddecks"
-        BASE   "${CARDDECKS_STAGING}"
-        FILES  ${STAGED_FILES}
-    )
-endif()
-qt_add_executable(kcuckounter
-        MANUAL_FINALIZATION
-        src/main.cpp
-)
-
-target_link_libraries(kcuckounter PRIVATE
-        kcuckounter_lib)
-target_compile_definitions(kcuckounter_lib PUBLIC  $<$<BOOL:${KDE}>:KC_KDE>)
-target_compile_definitions(kcuckounter     PRIVATE $<$<BOOL:${KDE}>:KC_KDE>)
+target_compile_definitions(kcuckounter PRIVATE $<$<BOOL:${KDE}>:KC_KDE>)
 
 if(ANDROID)
     set_property(TARGET kcuckounter PROPERTY QT_ANDROID_PACKAGE_NAME org.example.kcuckounter)
 endif()
+
 qt_finalize_executable(kcuckounter)
 
-if (KDE)
-    set(_INSTALL_ARGS ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+if(KDE)
+    set(install_args ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 else()
-    set(_INSTALL_ARGS
+    set(install_args
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif ()
-if (NOT ANDROID)
-    install(TARGETS kcuckounter ${_INSTALL_ARGS})
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
 endif()
+
+if(NOT ANDROID)
+    install(TARGETS kcuckounter ${install_args})
+endif()
+
+feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)

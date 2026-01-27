@@ -1,15 +1,28 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(kcuckounter LANGUAGES CXX)
+project(kcuckounter VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(QT_MAJOR_VERSION 6)
+set(QT_DEFAULT_MAJOR_VERSION 6)
+set(qt_min_version "6.0.0")
 
 option(KDE "Enable KDE Frameworks and KDEGames integration" OFF)
+option(ENABLE_COVERAGE "Enable coverage instrumentation for gcc/clang" OFF)
+option(BUILD_UNIT_TESTS "Build the unit tests target" ON)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif ()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(
-            -Og -g -fno-omit-frame-pointer
+            -Og
+            -g
+            -fno-omit-frame-pointer
             -Werror
             -Wall
             -Wextra
@@ -27,30 +40,49 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             -Wsign-conversion
             -Wsign-promo
     )
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=native -DNDEBUG")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s")
-endif()
 
-set(qt_min_version "6.0.0")
+    if (ENABLE_COVERAGE)
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            add_compile_options(--coverage)
+            add_link_options(--coverage)
+        elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+            add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+        endif ()
+    endif ()
+elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+    string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O3 -march=native -mtune=native -DNDEBUG")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -s")
+endif ()
 
-if(KDE)
+if (NOT ANDROID AND BUILD_UNIT_TESTS)
+    enable_testing()
+endif ()
+
+if (KDE)
     set(kf6_min_version "6.0.0")
     find_package(ECM 1.0.0 REQUIRED NO_MODULE)
     set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
     include(KDEInstallDirs)
     include(KDECMakeSettings)
     include(KDECompilerSettings NO_POLICY_SCOPE)
-else()
+else ()
     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
     include(GNUInstallDirs)
-endif()
+endif ()
 
 include(FeatureSummary)
 
-find_package(Qt6 ${qt_min_version} CONFIG REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 ${qt_min_version} CONFIG REQUIRED
+        COMPONENTS
+        Core
+        Concurrent
+        Svg
+        Widgets
+        Test
+)
 
-if(KDE)
+if (KDE)
     find_package(KF6 ${kf6_min_version} REQUIRED COMPONENTS
             CoreAddons
             I18n
@@ -60,56 +92,271 @@ if(KDE)
             KIO
     )
     find_package(KDEGames6 REQUIRED)
-endif()
+endif ()
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+set(kcuckounter_sources
+        src/main_window.cpp
+        src/widget/table.cpp
+        src/widget/table_slot.cpp
+        src/widget/card_widget.cpp
+        src/card_helpers/card_packer.cpp
+        src/card_helpers/card_picker.cpp
+        src/card_helpers/card_sheet.cpp
+        src/helpers/random_generator.cpp
+        src/helpers/base_clock.cpp
+        src/helpers/time_interface.cpp
+        src/helpers/infinity_spinbox.cpp
+        src/helpers/rasterization_runner.cpp
+        src/helpers/image_cacher.cpp
+        src/helpers/card_preview_carousel.cpp
+        src/widget/slot_settings.cpp
+        src/widget/settings_template.cpp
+        src/helpers/icon_loader.cpp
+        src/helpers/strategy_data.cpp
+        src/helpers/theme_palette.cpp
+        src/helpers/theme_settings.cpp
+)
+
+set(kcuckounter_headers
+        include/main_window.hpp
+        include/widget/table.hpp
+        include/widget/table_slot.hpp
+        include/widget/card_widget.hpp
+        include/card_helpers/card_packer.hpp
+        include/card_helpers/card_picker.hpp
+        include/card_helpers/card_sheet.hpp
+        include/helpers/random_generator.hpp
+        include/helpers/image_cacher.hpp
+        include/helpers/base_clock.hpp
+        include/helpers/time_interface.hpp
+        include/helpers/infinity_spinbox.hpp
+        include/helpers/rasterization_runner.hpp
+        include/helpers/card_preview_carousel.hpp
+        include/widget/slot_settings.hpp
+        include/widget/settings_template.hpp
+        include/helpers/str_label.hpp
+        include/helpers/icon_loader.hpp
+        include/helpers/strategy_data.hpp
+        include/helpers/theme_palette.hpp
+        include/helpers/theme_settings.hpp
+)
+
+set(kcuckounter_qt_libs
+        Qt6::Core
+        Qt6::Concurrent
+        Qt6::Svg
+        Qt6::Widgets
+)
+
+if (KDE)
+    set(kcuckounter_kde_libs
+            KF6::CoreAddons
+            KF6::I18n
+            KF6::XmlGui
+            KF6::ConfigWidgets
+            KF6::WidgetsAddons
+            KF6::KIOCore
+            KDEGames6
+    )
+endif ()
+
 qt_add_executable(kcuckounter
         MANUAL_FINALIZATION
         src/main.cpp
-        src/main_window.cpp
-        include/main_window.hpp
+        ${kcuckounter_sources}
+        ${kcuckounter_headers}
 )
 
-target_include_directories(kcuckounter PRIVATE include)
+target_include_directories(kcuckounter
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 target_link_libraries(kcuckounter
         PRIVATE
-        Qt6::Core
-        Qt6::Widgets
-        $<$<BOOL:${KDE}>:
-        KF6::CoreAddons
-        KF6::I18n
-        KF6::XmlGui
-        KF6::ConfigWidgets
-        KF6::WidgetsAddons
-        KF6::KIOCore
-        KDEGames6
-        >
+        ${kcuckounter_qt_libs}
+        $<$<BOOL:${KDE}>:${kcuckounter_kde_libs}>
 )
 
-target_compile_definitions(kcuckounter PRIVATE $<$<BOOL:${KDE}>:KC_KDE>)
+target_compile_definitions(kcuckounter
+        PRIVATE
+        $<$<BOOL:${KDE}>:KC_KDE>
+)
 
-if(ANDROID)
+if (NOT ANDROID AND BUILD_UNIT_TESTS)
+    target_precompile_headers(kcuckounter PRIVATE
+            <QtCore>
+            <QtWidgets>
+            <vector>
+            <tuple>
+    )
+endif ()
+
+if (ANDROID)
     set_property(TARGET kcuckounter PROPERTY QT_ANDROID_PACKAGE_NAME org.example.kcuckounter)
-endif()
+endif ()
 
 qt_finalize_executable(kcuckounter)
 
-if(KDE)
+add_custom_command(
+        TARGET kcuckounter POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:kcuckounter>/assets
+)
+
+if (KDE)
     set(install_args ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
-else()
+else ()
     set(install_args
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
-endif()
+endif ()
 
-if(NOT ANDROID)
+if (NOT ANDROID)
     install(TARGETS kcuckounter ${install_args})
-endif()
+endif ()
+
+if (NOT ANDROID AND BUILD_UNIT_TESTS)
+    set(kcuckounter_test_headers
+            tests/include/card_packer_tests.hpp
+            tests/include/card_sheet_tests.hpp
+            tests/include/card_widget_tests.hpp
+            tests/include/table_tests.hpp
+            tests/include/infinity_spinbox_tests.hpp
+    )
+
+    set(kcuckounter_test_sources
+            tests/main_tests.cpp
+            tests/card_packer_tests.cpp
+            tests/card_sheet_tests.cpp
+            tests/card_widget_tests.cpp
+            tests/table_tests.cpp
+            tests/infinity_spinbox_tests.cpp
+    )
+
+    qt_add_executable(kcuckounter_unittests
+            ${kcuckounter_test_sources}
+            ${kcuckounter_test_headers}
+            ${kcuckounter_sources}
+            ${kcuckounter_headers}
+    )
+
+    target_include_directories(kcuckounter_unittests
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/include
+    )
+
+    target_link_libraries(kcuckounter_unittests
+            PRIVATE
+            ${kcuckounter_qt_libs}
+            Qt6::Test
+            $<$<BOOL:${KDE}>:${kcuckounter_kde_libs}>
+    )
+
+    add_test(
+            NAME kcuckounter_unittests
+            COMMAND kcuckounter_unittests
+    )
+
+    add_custom_command(
+            TARGET kcuckounter_unittests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets
+            $<TARGET_FILE_DIR:kcuckounter_unittests>/assets
+    )
+endif ()
+
+if (ENABLE_COVERAGE AND NOT ANDROID)
+    set(COVERAGE_DIR "${CMAKE_BINARY_DIR}/../doc/cov")
+    set(COVERAGE_IGNORE_REGEX ".*/tests/.*|.*/include/.*|.*/usr/lib/.*|.*/[^/]*_autogen/.*|.*\\.moc|.*/moc_.*")
+
+    if (TARGET kcuckounter_unittests)
+        add_custom_command(
+                TARGET kcuckounter_unittests POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${COVERAGE_DIR}
+        )
+
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            find_program(LLVM_PROFDATA llvm-profdata)
+            find_program(LLVM_COV llvm-cov)
+
+            if (LLVM_PROFDATA AND LLVM_COV)
+                set(PROFRAW_FILE "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.profraw")
+                set(PROFDATA_FILE "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.profdata")
+
+                add_custom_target(coverage
+                        COMMENT "Generating coverage with llvm-cov"
+                        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                        COMMAND ${CMAKE_COMMAND} --build . --target kcuckounter_unittests
+                        COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=${PROFRAW_FILE}
+                        $<TARGET_FILE:kcuckounter_unittests>
+                        COMMAND ${LLVM_PROFDATA} merge -sparse
+                        -o ${PROFDATA_FILE} ${PROFRAW_FILE}
+                        COMMAND ${LLVM_COV} show $<TARGET_FILE:kcuckounter_unittests>
+                        -instr-profile=${PROFDATA_FILE}
+                        -format=html
+                        -output-dir=${COVERAGE_DIR}
+                        -ignore-filename-regex=${COVERAGE_IGNORE_REGEX}
+                        -show-branches=count
+                        -Xdemangler=c++filt
+                        -show-line-counts
+                        -show-regions
+                        -show-instantiations
+                        -show-expansions
+                        -use-color
+                        -coverage-watermark=90,60
+                        COMMAND ${LLVM_COV} export $<TARGET_FILE:kcuckounter_unittests>
+                        -instr-profile=${PROFDATA_FILE}
+                        -format=lcov
+                        -ignore-filename-regex=${COVERAGE_IGNORE_REGEX}
+                        > ${CMAKE_BINARY_DIR}/coverage.info
+                        DEPENDS kcuckounter_unittests
+                        VERBATIM
+                )
+            else ()
+                message(WARNING
+                        "ENABLE_COVERAGE=ON but llvm-profdata/llvm-cov not found; "
+                        "'coverage' target will be unavailable."
+                )
+            endif ()
+        elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            find_program(GCOVR gcovr)
+
+            if (GCOVR)
+                add_custom_target(coverage
+                        COMMENT "Generating coverage with gcovr"
+                        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                        COMMAND ${CMAKE_COMMAND} --build . --target kcuckounter_unittests
+                        COMMAND $<TARGET_FILE:kcuckounter_unittests>
+                        COMMAND ${CMAKE_COMMAND} -E make_directory ${COVERAGE_DIR}
+                        COMMAND ${GCOVR}
+                        --root ${CMAKE_SOURCE_DIR}
+                        --exclude "${COVERAGE_IGNORE_REGEX}"
+                        --html --html-details
+                        -o ${COVERAGE_DIR}/index.html
+                        DEPENDS kcuckounter_unittests
+                        VERBATIM
+                )
+            else ()
+                message(WARNING
+                        "ENABLE_COVERAGE=ON but gcovr not found; "
+                        "'coverage' target will be unavailable."
+                )
+            endif ()
+        endif ()
+    else ()
+        message(STATUS
+                "ENABLE_COVERAGE=ON but tests are not built; 'coverage' target will be a no-op."
+        )
+    endif ()
+endif ()
 
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)

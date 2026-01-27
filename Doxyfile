@@ -3,12 +3,12 @@ PROJECT_NUMBER         = 1.0
 PROJECT_BRIEF          = "A tool for improving arithmetic skills and memory"\
                          "retention through counting cards in different"\
                          "table-slots with different strategies."
-# PROJECT_ICON           = assets/favicon.ico
-# PROJECT_LOGO           = assets/logo.svg
+PROJECT_ICON           = assets/favicon.ico
+PROJECT_LOGO           = assets/logo.svg
 
-INPUT                  = readme.md include src docs/coverage.dox #tests
+INPUT                  = readme.md assets include src docs/coverage.dox #tests
 IMAGE_PATH             = assets
-EXCLUDE_PATTERNS       = build/*
+EXCLUDE_PATTERNS       = build/* tests/*
 RECURSIVE              = YES
 MARKDOWN_SUPPORT       = YES
 USE_MDFILE_AS_MAINPAGE = readme.md

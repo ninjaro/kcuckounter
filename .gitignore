@@ -43,6 +43,7 @@ cmake-build-debug/
 build*/
 cov/
 svgs/
+todo*
 
 CMakeLists.txt.user
 CMakeLists.txt.user.*

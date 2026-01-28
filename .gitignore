@@ -40,8 +40,10 @@ cmake-build-debug/
 # QT compiled translation file
 *.qm
 
-build/
+build*/
 cov/
+svgs/
+todo*
 
 CMakeLists.txt.user
 CMakeLists.txt.user.*

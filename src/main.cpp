@@ -1,60 +1,37 @@
-/*
- * The MIT License (MIT)
- *
- * Copyright (c) 2025 Yaroslav Riabtsev <yaroslav.riabtsev@rwth-aachen.de>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
-// Qt
 #include <QApplication>
 #include <QCommandLineParser>
-// std
+#include <QCoreApplication>
+#include <QIcon>
 #include <memory>
-// KF
+
+#include "main_window.hpp"
+
+#include "helpers/str_label.hpp"
+
+#ifdef KC_KDE
 #include <KAboutData>
 #include <KLocalizedString>
-// own
-#include "mainwindow.hpp"
+#endif
 
 int main(int argc, char* argv[]) {
-    const QApplication app(argc, argv);
+    QApplication app(argc, argv);
+    app.setWindowIcon(QIcon(str_label("assets/favicon.ico")));
+
+#ifdef KC_KDE
     KLocalizedString::setApplicationDomain("kcuckounter");
 
     KAboutData about_data(
-        QStringLiteral("kcuckounter"), i18n("kcuckounter"),
-        QStringLiteral("1.0"),
-        i18n(
-            "A tool for improving arithmetic skills and memory retention "
-            "through counting cards in different table-slots with different "
-            "strategies. "
-        ),
-        KAboutLicense::MIT, i18n("(c) 2025, Yaroslav Riabtsev"), QString(),
-        QStringLiteral("https://github.com/YaRiabtsev/kcuckounter"),
-        QStringLiteral("yaroslav.riabtsev@rwth-aachen.de")
+        str_label("kcuckounter"), str_label("kcuckounter"), str_label("1.0"),
+        str_label("A tool for card counting training."), KAboutLicense::MIT,
+        str_label("(c) 2025, Yaroslav Riabtsev"), QString(),
+        str_label("https://github.com/ninjaro/kcuckounter"),
+        str_label("yaroslav.riabtsev@rwth-aachen.de")
     );
 
     about_data.addAuthor(
-        i18n("Yaroslav Riabtsev"), i18n("Original author"),
-        QStringLiteral("yaroslav.riabtsev@rwth-aachen.de"),
-        QStringLiteral("https://github.com/YaRiabtsev"),
-        QStringLiteral("yariabtsev")
+        str_label("Yaroslav Riabtsev"), str_label("Original author"),
+        str_label("yaroslav.riabtsev@rwth-aachen.de"),
+        str_label("https://github.com/ninjaro"), str_label("ninjaro")
     );
 
     KAboutData::setApplicationData(about_data);
@@ -63,11 +40,24 @@ int main(int argc, char* argv[]) {
     about_data.setupCommandLine(&parser);
     parser.process(app);
     about_data.processCommandLine(&parser);
+#else
+    QCoreApplication::setApplicationName(str_label("kcuckounter"));
+    QCoreApplication::setOrganizationName(str_label("kcuckounter"));
+    QCoreApplication::setApplicationVersion(str_label("1.0"));
 
-    auto window = std::make_unique<MainWindow>();
+    QCommandLineParser parser;
+    parser.setApplicationDescription(
+        str_label("A tool for card counting training.")
+    );
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.process(app);
+#endif
+
+    auto window = std::make_unique<main_window>();
     window->show();
 
-    const int ret = QApplication::exec();
+    int result = QApplication::exec();
     window.reset();
-    return ret;
+    return result;
 }

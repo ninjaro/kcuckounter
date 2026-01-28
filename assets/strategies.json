@@ -1,0 +1,1084 @@
+{
+  "key_descriptions": {
+    "id": "Integer identifier after a rough popularity-based sort (lower id - more commonly discussed/used).",
+    "slug": "Stable snake_case identifier for code/DB keys.",
+    "name": "Human-readable strategy name.",
+    "date": "Earliest known publication/appearance date for the strategy (year or YYYY-MM-DD).",
+    "authors": "Primary creator(s)/author(s) most commonly credited.",
+    "description": "One-paragraph overview of what the count emphasizes and how it is typically used.",
+    "games": "Which blackjack table formats the strategy is commonly used for (e.g., pitch=hand-dealt, shoe=multi-deck).",
+    "min_decks": "Recommended minimum number of decks (integer) based on typical usage/author guidance.",
+    "balance": "true if the tag values sum to ~0 over a full 52-card deck; false if unbalanced.",
+    "ace_neutral": "true if the Ace has weight 0 in the main count (often implying reduced betting accuracy unless side-counted); false otherwise.",
+    "weights": "Array of tag values aligned with card_rank_order.",
+    "metrics": "Effectiveness metrics. When available from QFIT: betting_correlation (BC), playing_efficiency (PE), insurance_correlation (IC), and ease_of_use (1=hardest, 10=easiest).",
+    "refs": "References as structured citations; web refs include a URL and an accessed date.",
+    "unique_fields": "Optional flat (non-nested) fields capturing strategy-specific quirks."
+  },
+  "card_rank_order": [
+    "A",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "J",
+    "Q",
+    "K"
+  ],
+  "strategies": [
+    {
+      "id": 1,
+      "slug": "hi_lo",
+      "name": "Hi-Lo",
+      "date": "1963",
+      "authors": [
+        "Harvey Dubner"
+      ],
+      "description": "A widely used level-1 balanced count that tracks low cards (2-6) as +1 and high cards (10-A) as -1 to estimate shoe richness; typically used with true-count conversion for betting and index play.",
+      "games": [
+        "blackjack_pitch",
+        "blackjack_shoe"
+      ],
+      "min_decks": 1,
+      "balance": true,
+      "ace_neutral": false,
+      "weights": [
+        -1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "metrics": {
+        "betting_correlation": 0.97,
+        "playing_efficiency": 0.51,
+        "insurance_correlation": 0.76,
+        "ease_of_use": 6
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Hi-Lo - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Hi-Lo/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "web",
+          "citation": "M. Shackleford, \"Introduction to the High-Low Card Counting Strategy,\" Wizard of Odds.",
+          "url": "https://wizardofodds.com/games/blackjack/card-counting/high-low/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "S. Wong, Professional Blackjack. Pi Yee Press, 1975 (rev. ed. 1994)."
+        },
+        {
+          "type": "book",
+          "citation": "E. O. Thorp, Beat the Dealer. Random House, 1962 (rev. ed. 1966)."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "slug": "ko_count",
+      "name": "KO (Knock-Out) Count",
+      "date": "1996",
+      "authors": [
+        "Olaf Vancura",
+        "Ken Fuchs"
+      ],
+      "description": "A level-1 unbalanced count designed to avoid true-count conversion for betting by using fixed running-count thresholds ('pivots'); popular for shoe games due to simplicity.",
+      "games": [
+        "blackjack_shoe",
+        "blackjack_pitch"
+      ],
+      "min_decks": 2,
+      "balance": false,
+      "ace_neutral": false,
+      "weights": [
+        -1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "metrics": {
+        "betting_correlation": 0.98,
+        "playing_efficiency": 0.55,
+        "insurance_correlation": 0.78,
+        "ease_of_use": 7.5
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"K-O - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/K-O/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "O. Vancura and K. Fuchs, Knock-Out Blackjack. 1996."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "slug": "zen_count",
+      "name": "Zen Count",
+      "date": "1983",
+      "authors": [
+        "Arnold Snyder"
+      ],
+      "description": "A multi-level balanced count (tags up to ±2) that improves playing efficiency compared with level-1 counts; often used with true-count conversion and index play in both pitch and shoe games.",
+      "games": [
+        "blackjack_pitch",
+        "blackjack_shoe"
+      ],
+      "min_decks": 1,
+      "balance": true,
+      "ace_neutral": false,
+      "weights": [
+        -1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        1,
+        0,
+        0,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.96,
+        "playing_efficiency": 0.63,
+        "insurance_correlation": 0.85,
+        "ease_of_use": 4
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Zen Count - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Zen-Count/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "A. Snyder, Blackbelt in Blackjack. RGE Publishing, 1983."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "slug": "omega_ii",
+      "name": "Omega II Count",
+      "date": "1992",
+      "authors": [
+        "Bryce Carlson"
+      ],
+      "description": "A powerful multi-level balanced count (typically paired with indexes and often an ace side count) designed to perform well in multi-deck shoes; strong playing efficiency but higher complexity than level-1 systems.",
+      "games": [
+        "blackjack_shoe",
+        "blackjack_pitch"
+      ],
+      "min_decks": 2,
+      "balance": true,
+      "ace_neutral": true,
+      "weights": [
+        0,
+        1,
+        1,
+        2,
+        2,
+        2,
+        1,
+        0,
+        -1,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.92,
+        "playing_efficiency": 0.67,
+        "insurance_correlation": 0.85,
+        "ease_of_use": 4
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Omega II - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Omega-II/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "B. Carlson, Blackjack for Blood. 1992."
+        }
+      ],
+      "unique_fields": {
+        "note": "Main count is ace-neutral; many practitioners add an ace side count to improve betting accuracy."
+      }
+    },
+    {
+      "id": 5,
+      "slug": "hi_opt_i",
+      "name": "Hi-Opt I Count",
+      "date": "1980",
+      "authors": [
+        "Lance Humble",
+        "Carl Cooper"
+      ],
+      "description": "A level-1 balanced ace-neutral count derived from earlier work by Charles Einstein; improves playing efficiency vs Hi-Lo but has weaker betting correlation unless supplemented (e.g., with an ace side count).",
+      "games": [
+        "blackjack_pitch",
+        "blackjack_shoe"
+      ],
+      "min_decks": 1,
+      "balance": true,
+      "ace_neutral": true,
+      "weights": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "metrics": {
+        "betting_correlation": 0.88,
+        "playing_efficiency": 0.61,
+        "insurance_correlation": 0.85,
+        "ease_of_use": 6.5
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Hi-Opt I - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Hi-Opt-I/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "L. Humble and C. Cooper, The World's Greatest Blackjack Book. 1980."
+        }
+      ],
+      "unique_fields": {
+        "based_on_name": "Einstein count",
+        "based_on_author": "Charles Einstein",
+        "based_on_date": "late 1960s"
+      }
+    },
+    {
+      "id": 6,
+      "slug": "hi_opt_ii",
+      "name": "Hi-Opt II Count",
+      "date": "1977",
+      "authors": [
+        "Lance Humble",
+        "Julian Braun"
+      ],
+      "description": "A level-2 balanced ace-neutral count (tags up to ±2) generally considered very strong for single-deck play; often paired with an ace side count when used in shoes to improve betting accuracy.",
+      "games": [
+        "blackjack_pitch",
+        "blackjack_shoe"
+      ],
+      "min_decks": 1,
+      "balance": true,
+      "ace_neutral": true,
+      "weights": [
+        0,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        0,
+        0,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.91,
+        "playing_efficiency": 0.67,
+        "insurance_correlation": 0.91,
+        "ease_of_use": 4
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Hi-Opt II - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Hi-Opt-II/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "web",
+          "citation": "UNLV Libraries, \"Hi-opt II system for winning at casino blackjack\" (catalog record).",
+          "url": "https://unlv.primo.exlibrisgroup.com/primo-explore/fulldisplay?context=L&docid=01UNLV_ALMA21221150310004081",
+          "accessed": "2026-01-26"
+        }
+      ],
+      "unique_fields": {
+        "note": "Commonly cited as originating from a proprietary 'Hi-Opt II Report' before appearing in later blackjack literature."
+      }
+    },
+    {
+      "id": 7,
+      "slug": "revere_point_count",
+      "name": "Revere Point Count (RPC)",
+      "date": "1980",
+      "authors": [
+        "Lawrence Revere"
+      ],
+      "description": "A strong balanced multi-level count (often considered a 'sweet spot' between Hi-Lo and more complex counts) with excellent betting correlation; frequently recommended for shoe games.",
+      "games": [
+        "blackjack_shoe",
+        "blackjack_pitch"
+      ],
+      "min_decks": 4,
+      "balance": true,
+      "ace_neutral": false,
+      "weights": [
+        -2,
+        1,
+        2,
+        2,
+        2,
+        2,
+        1,
+        0,
+        0,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.99,
+        "playing_efficiency": 0.55,
+        "insurance_correlation": 0.78,
+        "ease_of_use": 4
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Revere Point Count - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Revere-Point-Count/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "L. Revere, Playing Blackjack as a Business. 1980."
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "slug": "revere_plus_minus",
+      "name": "Revere Plus-Minus (Advanced Plus-Minus)",
+      "date": "1980",
+      "authors": [
+        "Lawrence Revere"
+      ],
+      "description": "A level-1 balanced ace-neutral count used historically as a stepping stone toward more complex Revere systems; similar in spirit to Hi-Lo but shifts the Ace to neutral.",
+      "games": [
+        "blackjack_pitch",
+        "blackjack_shoe"
+      ],
+      "min_decks": 1,
+      "balance": true,
+      "ace_neutral": true,
+      "weights": [
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "metrics": {
+        "betting_correlation": 0.89,
+        "playing_efficiency": 0.59,
+        "insurance_correlation": 0.76,
+        "ease_of_use": 6
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Revere Plus-Minus - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Revere-Plus-Minus/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "L. Revere, Playing Blackjack as a Business. 1980."
+        }
+      ],
+      "unique_fields": {
+        "note": "Ace-neutral main count; betting accuracy is typically improved with additional information (e.g., ace tracking/side counting)."
+      }
+    },
+    {
+      "id": 9,
+      "slug": "ace_five",
+      "name": "Ace/Five Count",
+      "date": "1969",
+      "authors": [
+        "Edward O. Thorp",
+        "Lawrence Revere"
+      ],
+      "description": "An extremely simple count that tracks only Aces (-1) and Fives (+1). It is often used for low-profile play and comp-hunting, typically without index deviations and usually with a fixed spread in shoe games.",
+      "games": [
+        "blackjack_shoe"
+      ],
+      "min_decks": 6,
+      "balance": true,
+      "ace_neutral": false,
+      "weights": [
+        -1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "metrics": {
+        "betting_correlation": 0.54,
+        "playing_efficiency": 0.05,
+        "insurance_correlation": 0.0,
+        "score_1_8_spread": 3.1,
+        "score_1_16_spread": 5.3,
+        "score_1_32_spread": 6.5
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "M. Shackleford, \"The Ace/Five Count,\" Wizard of Odds.",
+          "url": "https://wizardofodds.com/games/blackjack/ace-five-count/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "E. O. Thorp, Beat the Dealer. (Similar 'five count' idea discussed in later printings, as noted by Wizard of Odds.)"
+        },
+        {
+          "type": "book",
+          "citation": "L. Revere, Playing Blackjack as a Business. (Revere Five Count Strategy; cited by Wizard of Odds as 1971 edition)."
+        },
+        {
+          "type": "web",
+          "citation": "Blackjack Review, \"Card Counting System Comparisons\" (Ace-Five metrics row).",
+          "url": "https://www.blackjackreview.com/wp/encyclopedia/card-counting-system-comparisons/",
+          "accessed": "2026-01-26"
+        }
+      ],
+      "unique_fields": {
+        "betting_rule_of_thumb": "Double last bet when running count >= 2 (Wizard of Odds presentation)",
+        "note": "Designed to be most effective in deep-penetration shoe games; commonly played with basic strategy only."
+      }
+    },
+    {
+      "id": 10,
+      "slug": "mentor",
+      "name": "Mentor Count",
+      "date": "2003",
+      "authors": [
+        "Fred Renzey"
+      ],
+      "description": "A balanced level-2 count with good all-around correlations; typically used with true-count conversion and a moderate index set. Often cited as a practical alternative to more complex level-3 systems.",
+      "games": [
+        "blackjack_pitch",
+        "blackjack_shoe"
+      ],
+      "min_decks": 1,
+      "balance": true,
+      "ace_neutral": false,
+      "weights": [
+        -1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        1,
+        0,
+        -1,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.97,
+        "playing_efficiency": 0.62,
+        "insurance_correlation": 0.8,
+        "ease_of_use": 4
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Mentor - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Mentor/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "F. Renzey, Blackjack Bluebook II. 2003."
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "slug": "uston_apc",
+      "name": "Uston APC (Advanced Point Count)",
+      "date": "1981",
+      "authors": [
+        "Ken Uston"
+      ],
+      "description": "A high-power balanced level-3 count aimed at strong playing efficiency (many indexes); more demanding mentally but historically popular among advanced players for shoe games.",
+      "games": [
+        "blackjack_shoe",
+        "blackjack_pitch"
+      ],
+      "min_decks": 4,
+      "balance": true,
+      "ace_neutral": true,
+      "weights": [
+        0,
+        1,
+        2,
+        2,
+        3,
+        2,
+        2,
+        1,
+        -1,
+        -3,
+        -3,
+        -3,
+        -3
+      ],
+      "metrics": {
+        "betting_correlation": 0.91,
+        "playing_efficiency": 0.69,
+        "insurance_correlation": 0.9,
+        "ease_of_use": 2.5
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Uston APC - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Uston-APC/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "K. Uston, Million Dollar Blackjack. Gambling Times Inc., 1981."
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "slug": "uston_ss",
+      "name": "Uston SS Count",
+      "date": "1986",
+      "authors": [
+        "Ken Uston"
+      ],
+      "description": "A popular unbalanced count from Uston's later work; often paired with an initial running count and shoe-specific thresholds, trading some elegance for practical speed at the table.",
+      "games": [
+        "blackjack_shoe"
+      ],
+      "min_decks": 4,
+      "balance": false,
+      "ace_neutral": false,
+      "weights": [
+        -2,
+        2,
+        2,
+        2,
+        3,
+        2,
+        1,
+        0,
+        -1,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.99,
+        "playing_efficiency": 0.54,
+        "insurance_correlation": 0.73,
+        "ease_of_use": 4.5
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Uston SS - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Uston-SS/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "K. Uston, Ken Uston on Blackjack. 1986."
+        }
+      ],
+      "unique_fields": {
+        "initial_running_count_formula": "-2 * decks (common presentation for shoe games)"
+      }
+    },
+    {
+      "id": 13,
+      "slug": "ubz2",
+      "name": "UBZ 2 (Unbalanced Zen II / Unbalanced Zen 11)",
+      "date": "1995",
+      "authors": [
+        "George C."
+      ],
+      "description": "An unbalanced variant inspired by Zen-style tags, optimized for betting with running-count thresholds; designed as a simpler approach than full true-count systems while retaining good overall strength.",
+      "games": [
+        "blackjack_shoe",
+        "blackjack_pitch"
+      ],
+      "min_decks": 1,
+      "balance": false,
+      "ace_neutral": false,
+      "weights": [
+        -1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        1,
+        0,
+        0,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.97,
+        "playing_efficiency": 0.62,
+        "insurance_correlation": 0.84,
+        "ease_of_use": 6.5
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"UBZ 2 - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Unbalanced-Zen-2/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Blackjack Strategies Summary\" (Unbalanced Zen published 1995), QFIT.com.",
+          "url": "https://www.qfit.com/blackjack-strategies.htm",
+          "accessed": "2026-01-26"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "slug": "silver_fox",
+      "name": "Silver Fox Count",
+      "date": "1981",
+      "authors": [
+        "Ralph Stricker"
+      ],
+      "description": "A level-1 balanced count optimized for betting and similar to the Green Fountain family; popular for its simplicity and shoe-game friendliness while remaining balanced (true-count capable).",
+      "games": [
+        "blackjack_shoe",
+        "blackjack_pitch"
+      ],
+      "min_decks": 4,
+      "balance": true,
+      "ace_neutral": false,
+      "weights": [
+        -1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "metrics": {
+        "betting_correlation": 0.96,
+        "playing_efficiency": 0.53,
+        "insurance_correlation": 0.69,
+        "ease_of_use": 6
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Silver Fox - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Silver-Fox/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "web",
+          "citation": "Blackjack Review, \"Card Counting System Comparisons\" (Silver Fox row).",
+          "url": "https://www.blackjackreview.com/wp/encyclopedia/card-counting-system-comparisons/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "R. Stricker, The Silver Fox Blackjack System. Silver Fox Enterprises, 1981 (revised ed. 1996)."
+        }
+      ],
+      "unique_fields": {
+        "note": "Often described as closely related to (or virtually identical in tags to) Green Fountain counts."
+      }
+    },
+    {
+      "id": 15,
+      "slug": "ten_count_thorp",
+      "name": "Ten Count (Thorp)",
+      "date": "1962",
+      "authors": [
+        "Edward O. Thorp"
+      ],
+      "description": "An early 'ten-richness' approach that heavily contrasts ten-value cards against all non-tens; historically important but rarely used today compared with modern point-count systems.",
+      "games": [
+        "blackjack_pitch",
+        "blackjack_shoe"
+      ],
+      "min_decks": 1,
+      "balance": true,
+      "ace_neutral": false,
+      "weights": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        -9,
+        -9,
+        -9,
+        -9
+      ],
+      "metrics": {},
+      "refs": [
+        {
+          "type": "book",
+          "citation": "E. O. Thorp, Beat the Dealer. Random House, 1962 (rev. ed. 1966)."
+        }
+      ],
+      "unique_fields": {
+        "note": "Often implemented as a ratio/ten-density idea; this tag version is a balanced encoding with 16 tens versus 36 non-tens."
+      }
+    },
+    {
+      "id": 16,
+      "slug": "revere_14_count",
+      "name": "Revere 14 Count",
+      "date": "1974",
+      "authors": [
+        "Lawrence Revere"
+      ],
+      "description": "A high-power balanced multi-level count (large tag magnitudes) with strong correlations, historically presented for serious single-deck play; very demanding mentally.",
+      "games": [
+        "blackjack_pitch",
+        "blackjack_shoe"
+      ],
+      "min_decks": 1,
+      "balance": true,
+      "ace_neutral": true,
+      "weights": [
+        0,
+        2,
+        2,
+        3,
+        4,
+        2,
+        1,
+        0,
+        -2,
+        -3,
+        -3,
+        -3,
+        -3
+      ],
+      "metrics": {
+        "betting_correlation": 0.92,
+        "playing_efficiency": 0.65,
+        "insurance_correlation": 0.82,
+        "ease_of_use": 1
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Revere 14 Count - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Revere-14-Count/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "L. Revere, The Complete Book of Blackjack. 1974."
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "slug": "canfield_expert",
+      "name": "Canfield Expert Count",
+      "date": "1977",
+      "authors": [
+        "Richard A. Canfield"
+      ],
+      "description": "A balanced level-1-style count tuned for single-deck play, with neutral Ace and 2 but positive 3-7; often cited as a practical step up in playing efficiency without going multi-level.",
+      "games": [
+        "blackjack_pitch"
+      ],
+      "min_decks": 1,
+      "balance": true,
+      "ace_neutral": true,
+      "weights": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "metrics": {
+        "betting_correlation": 0.87,
+        "playing_efficiency": 0.63,
+        "insurance_correlation": 0.76,
+        "ease_of_use": 6
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "N. Wattenberger, \"Canfield Expert - Card Counting Strategy,\" QFIT.com.",
+          "url": "https://www.qfit.com/cardcounting/Canfield-Expert/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "book",
+          "citation": "R. A. Canfield, Canfield Expert System. 1977."
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "slug": "brh_0",
+      "name": "BRH-0 Count",
+      "authors": [
+        "Barney R. Hart"
+      ],
+      "description": "A shoe-oriented unbalanced count from the BRH family; designed to be strong for betting while remaining practical for real-time play.",
+      "games": [
+        "blackjack_shoe",
+        "blackjack_pitch"
+      ],
+      "min_decks": 4,
+      "balance": false,
+      "ace_neutral": false,
+      "weights": [
+        -2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        0,
+        0,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.98,
+        "playing_efficiency": 0.54,
+        "insurance_correlation": 0.78
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "Blackjack Review, \"Card Counting System Comparisons\" (BRH rows).",
+          "url": "https://www.blackjackreview.com/wp/encyclopedia/card-counting-system-comparisons/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "web",
+          "citation": "Blackjack Review, \"BRH Systems.\"",
+          "url": "https://www.blackjackreview.com/wp/archives/brh-systems/",
+          "accessed": "2026-01-26"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "slug": "brh_i",
+      "name": "BRH-I Count",
+      "authors": [
+        "Barney R. Hart"
+      ],
+      "description": "A more aggressive unbalanced BRH variant with excellent betting correlation; typically presented as a shoe-game count with running-count thresholds.",
+      "games": [
+        "blackjack_shoe",
+        "blackjack_pitch"
+      ],
+      "min_decks": 4,
+      "balance": false,
+      "ace_neutral": false,
+      "weights": [
+        -2,
+        1,
+        2,
+        2,
+        3,
+        2,
+        1,
+        0,
+        0,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.99,
+        "playing_efficiency": 0.56,
+        "insurance_correlation": 0.76
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "Blackjack Review, \"Card Counting System Comparisons\" (BRH rows).",
+          "url": "https://www.blackjackreview.com/wp/encyclopedia/card-counting-system-comparisons/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "web",
+          "citation": "Blackjack Review, \"BRH Systems.\"",
+          "url": "https://www.blackjackreview.com/wp/archives/brh-systems/",
+          "accessed": "2026-01-26"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "slug": "brh_ii",
+      "name": "BRH-II Count",
+      "authors": [
+        "Barney R. Hart"
+      ],
+      "description": "A higher-level unbalanced BRH variant that shifts weight toward mid cards; typically used with shoe-game thresholds and can resemble some level-2 balanced counts in structure.",
+      "games": [
+        "blackjack_shoe",
+        "blackjack_pitch"
+      ],
+      "min_decks": 4,
+      "balance": false,
+      "ace_neutral": true,
+      "weights": [
+        0,
+        1,
+        1,
+        2,
+        2,
+        2,
+        1,
+        0,
+        0,
+        -2,
+        -2,
+        -2,
+        -2
+      ],
+      "metrics": {
+        "betting_correlation": 0.91,
+        "playing_efficiency": 0.67,
+        "insurance_correlation": 0.9
+      },
+      "refs": [
+        {
+          "type": "web",
+          "citation": "Blackjack Review, \"Card Counting System Comparisons\" (BRH rows).",
+          "url": "https://www.blackjackreview.com/wp/encyclopedia/card-counting-system-comparisons/",
+          "accessed": "2026-01-26"
+        },
+        {
+          "type": "web",
+          "citation": "Blackjack Review, \"BRH Systems.\"",
+          "url": "https://www.blackjackreview.com/wp/archives/brh-systems/",
+          "accessed": "2026-01-26"
+        }
+      ]
+    }
+  ]
+}
